@@ -26,37 +26,39 @@ object LabelImage {
     val imageBytes = Files.readAllBytes(Paths.get(imageFile))
   }
 
-  def constructAndExecuteGraphToNormalizeImage(imageBytes : Array[Byte])  = {
-      val g = new Graph()
-      val b = new GraphBuilder(g);
-      // Some constants specific to the pre-trained model at:
-      // https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip
-      //
-      // - The model was trained with images scaled to 224x224 pixels.
-      // - The colors, represented as R, G, B in 1-byte each were converted to
-      //   float using (value - Mean)/Scale.
-      val H = 224;
-      val W = 224;
-      val mean : Float = 117f;
-      val scale : Float = 1f;
+  def constructAndExecuteGraphToNormalizeImage(imageBytes: Array[Byte]) = {
+    val g = new Graph()
+    val b = new GraphBuilder(g);
+    // Some constants specific to the pre-trained model at:
+    // https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip
+    //
+    // - The model was trained with images scaled to 224x224 pixels.
+    // - The colors, represented as R, G, B in 1-byte each were converted to
+    //   float using (value - Mean)/Scale.
+    val H = 224;
+    val W = 224;
+    val mean: Float = 117f;
+    val scale: Float = 1f;
 
-      // Since the graph is being constructed once per execution here, we can use a constant for the
-      // input image. If the graph were to be re-used for multiple input images, a placeholder would
-      // have been more appropriate.
-      val input : Output[String] = b.constant[Array[Byte], String]("input", imageBytes);
-      val output : Output[Float] =
-          b.div(
-              b.sub(
-                  b.resizeBilinear(
-                      b.expandDims(
-                          b.cast[UInt8, Float](b.decodeJpeg(input, 3)),
-                          b.constant[Int, Int]("make_batch", 0)),
-                      b.constant[Array[Int], Int]("size", Array(H, W))),
-                  b.constant[Float, Float]("mean", mean)),
-              b.constant[Float, Float]("scale", scale))
+    // Since the graph is being constructed once per execution here, we can use a constant for the
+    // input image. If the graph were to be re-used for multiple input images, a placeholder would
+    // have been more appropriate.
+    val input: Output[String] =
+      b.constant("input", imageBytes);
+    val output: Output[Float] =
+      b.div(
+        b.sub(
+          b.resizeBilinear(
+            b.expandDims(b.cast[UInt8, Float](b.decodeJpeg(input, 3)),
+                         b.constant("make_batch", 0)),
+            b.constant("size", Array(H, W))),
+          b.constant("mean", mean)
+        ),
+        b.constant("scale", scale)
+      )
 
-      val  s = new Session(g)
-      s.runner().fetch(output.op().name()).run().get(0)//.expect(Float.class);
+    val s = new Session(g)
+    s.runner().fetch(output.op().name()).run().get(0) //.expect(Float.class);
   }
 
   def maxIndex(probabilities: Array[Float]) =
@@ -70,9 +72,9 @@ class GraphBuilder(val g: Graph) {
   def binaryOp3[T, U, V](typ: String, in1: Output[U], in2: Output[V]) =
     g.opBuilder(typ, typ).addInput(in1).addInput(in2).build().output[T](0)
 
-
   // FIXME: should infer `T` from `X`
-  def constant[X, T](name: String, value: X)(implicit cls: ClassDataType[T], validity: ValidDataType[T, T]) = {
+  def constant[X, T](name: String, value: X)(implicit cls: ClassDataType[T],
+                                             validity: ValidDataType[X, T]) = {
     val t = Tensor.create(value)
     g.opBuilder("Const", name)
       .setAttr("dtype", ClassDataType.get[T])
@@ -104,17 +106,26 @@ class GraphBuilder(val g: Graph) {
 
   def decodeJpeg(contents: Output[String], channels: Long) =
     g.opBuilder("DecodeJpeg", "DecodeJpeg")
-        .addInput(contents)
-        .setAttr("channels", channels)
-        .build()
-        .output[UInt8](0)
+      .addInput(contents)
+      .setAttr("channels", channels)
+      .build()
+      .output[UInt8](0)
 }
 
-trait ValidDataType[T, X]{
-  val dt : DataType
+trait ValidDataType[X, T] {
+  val dt: DataType
+
+  val cdt: ClassDataType[T]
 }
 
-object ValidDataType{
+object ValidDataType {
+  def apply[X, T: ClassDataType](): ValidDataType[X, T] =
+    new ValidDataType[X, T] {
+      val cdt = implicitly[ClassDataType[T]]
+
+      val dt = cdt.dt
+    }
+
   implicit val int: ClassDataType[Int] = ClassDataType(DataType.INT32)
   implicit val long: ClassDataType[Long] = ClassDataType(DataType.INT64)
   implicit val float: ClassDataType[Float] = ClassDataType(DataType.FLOAT)
@@ -122,15 +133,19 @@ object ValidDataType{
   implicit val bool: ClassDataType[Boolean] = ClassDataType(DataType.BOOL)
   implicit val byte: ClassDataType[Byte] = ClassDataType(DataType.STRING)
   implicit val string: ClassDataType[String] = ClassDataType(DataType.STRING)
-  implicit val arrayByte: ClassDataType[Array[Byte]] = ClassDataType(DataType.STRING)
-  implicit def array[T](
-      implicit base: ClassDataType[T]): ClassDataType[Array[T]] =
-    ClassDataType(base.dt)
+  implicit val arrayByte: ValidDataType[Array[Byte], String] = ValidDataType()
+  implicit def array[T: ClassDataType]: ValidDataType[Array[T], T] =
+    ValidDataType()
+  // implicit def array[T](
+  //     implicit base: ClassDataType[T]): ClassDataType[Array[T]] =
+  //   ClassDataType(base.dt)
 
 }
 
-case class ClassDataType[T](dt: DataType) extends ValidDataType[T, T]
+case class ClassDataType[T](dt: DataType) extends ValidDataType[T, T] {
+  val cdt = this
+}
 
-object ClassDataType{
+object ClassDataType {
   def get[T: ClassDataType] = implicitly[ClassDataType[T]].dt
 }
