@@ -24,6 +24,13 @@ object LabelImage {
       Files.readAllLines(
         Paths.get(modelDir, "imagenet_comp_graph_label_strings.txt"))
     val imageBytes = Files.readAllBytes(Paths.get(imageFile))
+
+    val image = constructAndExecuteGraphToNormalizeImage(imageBytes)
+    val labelProbabilities = executeInceptionGraph(graphDef, image)
+    val bestLabelIdx = maxIndex(labelProbabilities)
+    println(
+      f"BEST MATCH: ${labels.get(bestLabelIdx)}%s (${labelProbabilities(bestLabelIdx) * 100f}%.2f%% likely)"
+    )
   }
 
   def constructAndExecuteGraphToNormalizeImage(imageBytes: Array[Byte]) = {
@@ -58,7 +65,36 @@ object LabelImage {
       )
 
     val s = new Session(g)
-    s.runner().fetch(output.op().name()).run().get(0) //.expect(Float.class);
+    s.runner()
+      .fetch(output.op().name())
+      .run()
+      .get(0)
+      .asInstanceOf[Tensor[Float]] //.expect(Float.class);
+  }
+
+  def executeInceptionGraph(graphDef: Array[Byte],
+                            image: Tensor[Float]): Array[Float] = {
+    val g = new Graph()
+    g.importGraphDef(graphDef);
+    val s = new Session(g);
+    val result =
+      s.runner()
+        .feed("input", image)
+        .fetch("output")
+        .run()
+        .get(0)
+        .asInstanceOf[Tensor[Float]] //.expect(Float.class)
+    val rshape = result.shape();
+    if (result.numDimensions() != 2 || rshape(0) != 1) {
+      throw new RuntimeException(
+        String.format(
+          "Expected model to produce a [1 N] shaped tensor where N is the number of labels, instead it produced one with shape %s",
+          Arrays.toString(rshape)));
+    }
+    val nlabels = rshape(1)
+    val arr = Array.ofDim[Float](1, nlabels.toInt)
+    result.copyTo(arr)(0)
+
   }
 
   def maxIndex(probabilities: Array[Float]) =
