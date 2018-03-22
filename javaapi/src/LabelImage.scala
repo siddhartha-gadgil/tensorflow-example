@@ -8,12 +8,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Arrays
 import java.util.List
-import org.tensorflow.DataType
-import org.tensorflow.Graph
-import org.tensorflow.Output
-import org.tensorflow.Session
-import org.tensorflow.Tensor
-import org.tensorflow.TensorFlow
+import org.tensorflow._
 import org.tensorflow.types.UInt8
 
 object LabelImage {
@@ -115,6 +110,14 @@ class GraphBuilder(val g: Graph) {
     g.opBuilder("Const", name)
       .setAttr("dtype", ClassDataType.get[T])
       .setAttr("value", t)
+      .build()
+      .output[T](0)
+  }
+
+  def variable[T](name: String)(implicit cls: ClassDataType[T]) = {
+    g.opBuilder("Variable", name)
+      .setAttr("dtype", ClassDataType.get[T])
+      .setAttr("shape", Shape.make(1))
       .build()
       .output[T](0)
   }
