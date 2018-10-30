@@ -1,26 +1,29 @@
 package javaapi
 
-import java.io.IOException
-import java.io.PrintStream
-import java.nio.charset.Charset
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util
 import java.util.Arrays
-import java.util.List
+
 import org.tensorflow._
 import org.tensorflow.types.UInt8
 
+object HopperTest extends App {
+  LabelImage.apply()
+}
+
 object LabelImage {
-  def apply(modelDir: String, imageFile: String): Unit = {
+  def apply(modelDir: String = "javaapi/resources", imageFile: String = "javaapi/resources/grace_hopper.jpg"): Unit = {
     val graphDef =
       Files.readAllBytes(Paths.get(modelDir, "tensorflow_inception_graph.pb"))
     val labels =
       Files.readAllLines(
         Paths.get(modelDir, "imagenet_comp_graph_label_strings.txt"))
-    val imageBytes = Files.readAllBytes(Paths.get(imageFile))
+    val imageBytes: Array[Byte] = Files.readAllBytes(Paths.get(imageFile))
 
-    val image = constructAndExecuteGraphToNormalizeImage(imageBytes)
+    val image: Tensor[Float] = constructAndExecuteGraphToNormalizeImage(imageBytes)
     val labelProbabilities = executeInceptionGraph(graphDef, image)
     val bestLabelIdx = maxIndex(labelProbabilities)
     println(
@@ -28,25 +31,25 @@ object LabelImage {
     )
   }
 
-  def constructAndExecuteGraphToNormalizeImage(imageBytes: Array[Byte]) = {
+  def constructAndExecuteGraphToNormalizeImage(imageBytes: Array[Byte]): Tensor[Float] = {
     val g = new Graph()
-    val b = new GraphBuilder(g);
+    val b = new GraphBuilder(g)
     // Some constants specific to the pre-trained model at:
     // https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip
     //
     // - The model was trained with images scaled to 224x224 pixels.
     // - The colors, represented as R, G, B in 1-byte each were converted to
     //   float using (value - Mean)/Scale.
-    val H = 224;
-    val W = 224;
-    val mean: Float = 117f;
-    val scale: Float = 1f;
+    val H = 224
+    val W = 224
+    val mean: Float = 117f
+    val scale: Float = 1f
 
     // Since the graph is being constructed once per execution here, we can use a constant for the
     // input image. If the graph were to be re-used for multiple input images, a placeholder would
     // have been more appropriate.
     val input: Output[String] =
-      b.constant("input", imageBytes);
+      b.constant("input", imageBytes)
     val output: Output[Float] =
       b.div(
         b.sub(
@@ -70,42 +73,41 @@ object LabelImage {
   def executeInceptionGraph(graphDef: Array[Byte],
                             image: Tensor[Float]): Array[Float] = {
     val g = new Graph()
-    g.importGraphDef(graphDef);
-    val s = new Session(g);
-    val result =
+    g.importGraphDef(graphDef)
+    val s = new Session(g)
+    val result: Tensor[Float] =
       s.runner()
         .feed("input", image)
         .fetch("output")
         .run()
         .get(0)
         .asInstanceOf[Tensor[Float]] //.expect(Float.class)
-    val rshape = result.shape();
+    val rshape: Array[Long] = result.shape()
     if (result.numDimensions() != 2 || rshape(0) != 1) {
       throw new RuntimeException(
         String.format(
           "Expected model to produce a [1 N] shaped tensor where N is the number of labels, instead it produced one with shape %s",
-          Arrays.toString(rshape)));
+          util.Arrays.toString(rshape)))
     }
-    val nlabels = rshape(1)
-    val arr = Array.ofDim[Float](1, nlabels.toInt)
+    val nlabels: Long = rshape(1)
+    val arr: Array[Array[Float]] = Array.ofDim[Float](1, nlabels.toInt)
     result.copyTo(arr)(0)
 
   }
 
-  def maxIndex(probabilities: Array[Float]) =
+  def maxIndex(probabilities: Array[Float]): Int =
     probabilities.zipWithIndex.maxBy(_._1)._2
 }
 
 class GraphBuilder(val g: Graph) {
-  def binaryOp[T](typ: String, in1: Output[T], in2: Output[T]) =
+  def binaryOp[T](typ: String, in1: Output[T], in2: Output[T]): Output[T] =
     g.opBuilder(typ, typ).addInput(in1).addInput(in2).build().output[T](0)
 
-  def binaryOp3[T, U, V](typ: String, in1: Output[U], in2: Output[V]) =
+  def binaryOp3[T, U, V](typ: String, in1: Output[U], in2: Output[V]): Output[T] =
     g.opBuilder(typ, typ).addInput(in1).addInput(in2).build().output[T](0)
 
-  // FIXME: should infer `T` from `X`
   def constant[X, T](name: String, value: X)(implicit cls: ClassDataType[T],
-                                             validity: ValidDataType[X, T]) = {
+                                             validity: ValidDataType[X, T]): Output[T] = {
     val t = Tensor.create(value)
     g.opBuilder("Const", name)
       .setAttr("dtype", ClassDataType.get[T])
@@ -114,7 +116,7 @@ class GraphBuilder(val g: Graph) {
       .output[T](0)
   }
 
-  def variable[T](name: String)(implicit cls: ClassDataType[T]) = {
+  def variable[T](name: String)(implicit cls: ClassDataType[T]): Output[T] = {
     g.opBuilder("Variable", name)
       .setAttr("dtype", ClassDataType.get[T])
       .setAttr("shape", Shape.make(1))
@@ -122,7 +124,7 @@ class GraphBuilder(val g: Graph) {
       .output[T](0)
   }
 
-  def cast[T, U: ClassDataType](value: Output[T]) = {
+  def cast[T, U: ClassDataType](value: Output[T]): Output[U] = {
     val dtype = ClassDataType.get[U]
     g.opBuilder("Cast", "Cast")
       .addInput(value)
@@ -131,10 +133,10 @@ class GraphBuilder(val g: Graph) {
       .output[U](0)
   }
 
-  def div(x: Output[Float], y: Output[Float]) =
+  def div(x: Output[Float], y: Output[Float]): Output[Float] =
     binaryOp("Div", x, y)
 
-  def sub[T](x: Output[T], y: Output[T]) =
+  def sub[T](x: Output[T], y: Output[T]): Output[T] =
     binaryOp("Sub", x, y)
 
   def expandDims[T](input: Output[T], dim: Output[Int]): Output[T] =
@@ -143,7 +145,7 @@ class GraphBuilder(val g: Graph) {
   def resizeBilinear[T](images: Output[T], dim: Output[Int]): Output[Float] =
     binaryOp3("ResizeBilinear", images, dim)
 
-  def decodeJpeg(contents: Output[String], channels: Long) =
+  def decodeJpeg(contents: Output[String], channels: Long): Output[UInt8] =
     g.opBuilder("DecodeJpeg", "DecodeJpeg")
       .addInput(contents)
       .setAttr("channels", channels)
@@ -160,9 +162,9 @@ trait ValidDataType[X, T] {
 object ValidDataType {
   def apply[X, T: ClassDataType](): ValidDataType[X, T] =
     new ValidDataType[X, T] {
-      val cdt = implicitly[ClassDataType[T]]
+      val cdt: ClassDataType[T] = implicitly[ClassDataType[T]]
 
-      val dt = cdt.dt
+      val dt: DataType = cdt.dt
     }
 
   implicit val int: ClassDataType[Int] = ClassDataType(DataType.INT32)
@@ -182,9 +184,9 @@ object ValidDataType {
 }
 
 case class ClassDataType[T](dt: DataType) extends ValidDataType[T, T] {
-  val cdt = this
+  val cdt: ClassDataType[T] = this
 }
 
 object ClassDataType {
-  def get[T: ClassDataType] = implicitly[ClassDataType[T]].dt
+  def get[T: ClassDataType]: DataType = implicitly[ClassDataType[T]].dt
 }

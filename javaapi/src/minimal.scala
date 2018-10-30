@@ -1,4 +1,4 @@
-object Minimal extends App {
+object Minimal  {
   import org.tensorflow._
   val value = "Hello from " + TensorFlow.version();
   val t = Tensor.create(value.getBytes("UTF-8"))
@@ -9,5 +9,5 @@ object Minimal extends App {
     .build();
   val s = new Session(g)
   val output = s.runner().fetch("MyConst").run().get(0)
-  println(new String(output.bytesValue(), "UTF-8"))
+  def run() = println(new String(output.bytesValue(), "UTF-8"))
 }
