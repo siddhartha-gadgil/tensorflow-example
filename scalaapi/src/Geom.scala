@@ -2,34 +2,37 @@ package scalaapi
 
 import org.platanios.tensorflow.api
 import org.platanios.tensorflow.api._
-
 import Geom._
 
 case class Geom(n: Int, p: Double) {
   val probVars: Vector[api.tf.Variable[Float]] = (0 to n)
     .map(j =>
-      tf.variable[Float](s"p$j", Shape(1, 1), initializer = tf.ConstantInitializer[Float](1.0f / n)))
+      tf.variable[Float](s"p$j",
+                         Shape(1, 1),
+                         initializer = tf.ConstantInitializer[Float](1.0f / n)))
     .toVector
 
-  val totProbErr: Output[Float] =
-    tf.square(probVars.foldLeft[Output[Float]](tf.constant[Float](-1)) {
+  val totSig: Output[Float] =
+    probVars.map(v => tf.sigmoid(v: Output[Float])).reduce[Output[Float]] {
       case (x, y) => tf.add(x, y)
-    })
+    }
+
+  val probs: Vector[Output[Float]] =
+    probVars.map(v => tf.divide(tf.sigmoid(v), totSig))
+
 
   val matchErrors: Vector[Output[Float]] =
-    probVars.zip(probVars.tail).map {
+    probs.zip(probs.tail).map {
       case (x0, x1) =>
         delSq(x1, tf.multiply(x0, p.toFloat))
     }
 
-  val posErrs: Vector[Output[Float]] =
-    probVars.map(v => tf.square(tf.multiply(tf.subtract(v, tf.abs(v)), 100f)))
 
-  val loss: Output[Float] = (matchErrors ++ posErrs).foldLeft(totProbErr) {
+  val loss: Output[Float] = matchErrors.reduce[Output[Float]] {
     case (a, b) => tf.add(a, b)
   }
 
-  val trainOp: UntypedOp = tf.train.AdaGrad(0.1f).minimize(loss)
+  val trainOp: UntypedOp = tf.train.AdaGrad(1.0f).minimize(loss)
 
   val session = Session()
 
@@ -40,20 +43,20 @@ case class Geom(n: Int, p: Double) {
     (1 to steps).foreach { j =>
 //      println(j)
       val trainLoss = session.run(fetches = loss, targets = trainOp)
-      if (j % 100 == 0) println(trainLoss.scalar)
+      if (j % 100 == 0) println(s"loss: ${trainLoss.scalar}, steps: $j")
     }
 
-    (1 to n).toVector.map { j =>
-      session.run(fetches = probVars(j).value).scalar
+    (0 to n).toVector.map { j =>
+      session.run(fetches = probs(j)).scalar
     }
   }
-  
+
 }
 
 object Geom {
   def delSq(x: Output[Float], y: Output[Float]): Output[Float] =
     tf.square(
       tf.divide(tf.subtract(x, y),
-                tf.add(tf.add(tf.abs(x), tf.abs(y)), math.pow(10, -7).toFloat))
+                tf.add(tf.abs(x), tf.abs(y)))
     )
 }
