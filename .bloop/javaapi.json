@@ -1,0 +1,195 @@
+{
+    "version": "1.1.2",
+    "project": {
+        "name": "javaapi",
+        "directory": "/home/gadgil/code/tensorflow-example/javaapi",
+        "workspaceDir": "/home/gadgil/code/tensorflow-example",
+        "sources": [
+            "/home/gadgil/code/tensorflow-example/javaapi/src"
+        ],
+        "dependencies": [
+            
+        ],
+        "classpath": [
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-platform/0.2.0/tensorflow-core-platform-0.2.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.3/scala-library-2.13.3.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-linux-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-macosx-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-windows-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-linux-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-macosx-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-windows-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.8.0/protobuf-java-3.8.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/ndarray/0.2.0/ndarray-0.2.0.jar"
+        ],
+        "out": "/home/gadgil/code/tensorflow-example/.bloop/out/javaapi",
+        "classesDir": "/home/gadgil/code/tensorflow-example/.bloop/out/javaapi/classes",
+        "resources": [
+            "/home/gadgil/code/tensorflow-example/javaapi/resources"
+        ],
+        "scala": {
+            "organization": "org.scala-lang",
+            "name": "scala-compiler",
+            "version": "2.13.3",
+            "options": [
+                
+            ],
+            "jars": [
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.3/scala-compiler-2.13.3.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.3/scala-reflect-2.13.3.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.3/scala-library-2.13.3.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/jline/jline/3.15.0/jline-3.15.0.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar"
+            ]
+        },
+        "java": {
+            "options": [
+                
+            ]
+        },
+        "platform": {
+            "name": "jvm",
+            "config": {
+                "home": "/home/gadgil/.cache/coursier/jvm/adopt@1.11.0-8",
+                "options": [
+                    "-Duser.dir=/home/gadgil/code/tensorflow-example"
+                ]
+            },
+            "mainClass": [
+                
+            ]
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.tensorflow",
+                    "name": "tensorflow-core-platform",
+                    "version": "0.2.0",
+                    "artifacts": [
+                        {
+                            "name": "tensorflow-core-platform",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-platform/0.2.0/tensorflow-core-platform-0.2.0.jar"
+                        },
+                        {
+                            "name": "tensorflow-core-platform",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-platform/0.2.0/tensorflow-core-platform-0.2.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.tensorflow",
+                    "name": "ndarray",
+                    "version": "0.2.0",
+                    "artifacts": [
+                        {
+                            "name": "ndarray",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/ndarray/0.2.0/ndarray-0.2.0.jar"
+                        },
+                        {
+                            "name": "ndarray",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/ndarray/0.2.0/ndarray-0.2.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.google.protobuf",
+                    "name": "protobuf-java",
+                    "version": "3.8.0",
+                    "artifacts": [
+                        {
+                            "name": "protobuf-java",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.8.0/protobuf-java-3.8.0.jar"
+                        },
+                        {
+                            "name": "protobuf-java",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.8.0/protobuf-java-3.8.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.tensorflow",
+                    "name": "tensorflow-core-api",
+                    "version": "0.2.0",
+                    "artifacts": [
+                        {
+                            "name": "tensorflow-core-api",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0.jar"
+                        },
+                        {
+                            "name": "tensorflow-core-api",
+                            "classifier": "linux-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-linux-x86_64.jar"
+                        },
+                        {
+                            "name": "tensorflow-core-api",
+                            "classifier": "macosx-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-macosx-x86_64.jar"
+                        },
+                        {
+                            "name": "tensorflow-core-api",
+                            "classifier": "windows-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-windows-x86_64.jar"
+                        },
+                        {
+                            "name": "tensorflow-core-api",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/tensorflow-core-api/0.2.0/tensorflow-core-api-0.2.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "2.13.3",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.3/scala-library-2.13.3.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.3/scala-library-2.13.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.bytedeco",
+                    "name": "javacpp",
+                    "version": "1.5.4",
+                    "artifacts": [
+                        {
+                            "name": "javacpp",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4.jar"
+                        },
+                        {
+                            "name": "javacpp",
+                            "classifier": "linux-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-linux-x86_64.jar"
+                        },
+                        {
+                            "name": "javacpp",
+                            "classifier": "macosx-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-macosx-x86_64.jar"
+                        },
+                        {
+                            "name": "javacpp",
+                            "classifier": "windows-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-windows-x86_64.jar"
+                        },
+                        {
+                            "name": "javacpp",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/bytedeco/javacpp/1.5.4/javacpp-1.5.4-sources.jar"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

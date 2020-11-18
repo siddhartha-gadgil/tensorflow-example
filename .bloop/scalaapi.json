@@ -1,0 +1,516 @@
+{
+    "version": "1.1.2",
+    "project": {
+        "name": "scalaapi",
+        "directory": "/home/gadgil/code/tensorflow-example/scalaapi",
+        "workspaceDir": "/home/gadgil/code/tensorflow-example",
+        "sources": [
+            "/home/gadgil/code/tensorflow-example/scalaapi/src"
+        ],
+        "dependencies": [
+            
+        ],
+        "classpath": [
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow_2.12/0.4.0/tensorflow_2.12-0.4.0-linux-cpu-x86_64.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.10/scala-library-2.12.10.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-jni_2.12/0.4.0/tensorflow-jni_2.12-0.4.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-api_2.12/0.4.0/tensorflow-api_2.12-0.4.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/scala-logging/scala-logging_2.12/3.9.0/scala-logging_2.12-3.9.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalactic/scalactic_2.12/3.0.5/scalactic_2.12-3.0.5.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.5.1/protobuf-java-3.5.1.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/proto/1.11.0/proto-1.11.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/chuusai/shapeless_2.12/2.3.3/shapeless_2.12-2.3.3.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/ghik/silencer-lib_2.12/0.6/silencer-lib_2.12-0.6.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-core_2.12/0.10.0/circe-core_2.12-0.10.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-generic_2.12/0.10.0/circe-generic_2.12-0.10.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-parser_2.12/0.10.0/circe-parser_2.12-0.10.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.10/scala-reflect-2.12.10.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/macro-compat_2.12/1.1.1/macro-compat_2.12-1.1.1.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-numbers_2.12/0.10.0/circe-numbers_2.12-0.10.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_2.12/1.4.0/cats-core_2.12-1.4.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-jawn_2.12/0.10.0/circe-jawn_2.12-0.10.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-macros_2.12/1.4.0/cats-macros_2.12-1.4.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.12/1.4.0/cats-kernel_2.12-1.4.0.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/machinist_2.12/0.6.5/machinist_2.12-0.6.5.jar",
+            "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/spire-math/jawn-parser_2.12/0.13.0/jawn-parser_2.12-0.13.0.jar"
+        ],
+        "out": "/home/gadgil/code/tensorflow-example/.bloop/out/scalaapi",
+        "classesDir": "/home/gadgil/code/tensorflow-example/.bloop/out/scalaapi/classes",
+        "resources": [
+            "/home/gadgil/code/tensorflow-example/scalaapi/resources"
+        ],
+        "scala": {
+            "organization": "org.scala-lang",
+            "name": "scala-compiler",
+            "version": "2.12.10",
+            "options": [
+                
+            ],
+            "jars": [
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.12.10/scala-compiler-2.12.10.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.10/scala-reflect-2.12.10.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.10/scala-library-2.12.10.jar",
+                "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.0.6/scala-xml_2.12-1.0.6.jar"
+            ]
+        },
+        "java": {
+            "options": [
+                
+            ]
+        },
+        "platform": {
+            "name": "jvm",
+            "config": {
+                "home": "/home/gadgil/.cache/coursier/jvm/adopt@1.11.0-8",
+                "options": [
+                    "-Duser.dir=/home/gadgil/code/tensorflow-example"
+                ]
+            },
+            "mainClass": [
+                
+            ]
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.scalactic",
+                    "name": "scalactic_2.12",
+                    "version": "3.0.5",
+                    "artifacts": [
+                        {
+                            "name": "scalactic_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalactic/scalactic_2.12/3.0.5/scalactic_2.12-3.0.5.jar"
+                        },
+                        {
+                            "name": "scalactic_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalactic/scalactic_2.12/3.0.5/scalactic_2.12-3.0.5-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.slf4j",
+                    "name": "slf4j-api",
+                    "version": "1.7.25",
+                    "artifacts": [
+                        {
+                            "name": "slf4j-api",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar"
+                        },
+                        {
+                            "name": "slf4j-api",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.platanios",
+                    "name": "tensorflow-api_2.12",
+                    "version": "0.4.0",
+                    "artifacts": [
+                        {
+                            "name": "tensorflow-api_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-api_2.12/0.4.0/tensorflow-api_2.12-0.4.0.jar"
+                        },
+                        {
+                            "name": "tensorflow-api_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-api_2.12/0.4.0/tensorflow-api_2.12-0.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "ch.qos.logback",
+                    "name": "logback-classic",
+                    "version": "1.2.3",
+                    "artifacts": [
+                        {
+                            "name": "logback-classic",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar"
+                        },
+                        {
+                            "name": "logback-classic",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-core_2.12",
+                    "version": "1.4.0",
+                    "artifacts": [
+                        {
+                            "name": "cats-core_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_2.12/1.4.0/cats-core_2.12-1.4.0.jar"
+                        },
+                        {
+                            "name": "cats-core_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_2.12/1.4.0/cats-core_2.12-1.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.scala-logging",
+                    "name": "scala-logging_2.12",
+                    "version": "3.9.0",
+                    "artifacts": [
+                        {
+                            "name": "scala-logging_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/scala-logging/scala-logging_2.12/3.9.0/scala-logging_2.12-3.9.0.jar"
+                        },
+                        {
+                            "name": "scala-logging_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/scala-logging/scala-logging_2.12/3.9.0/scala-logging_2.12-3.9.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.google.protobuf",
+                    "name": "protobuf-java",
+                    "version": "3.5.1",
+                    "artifacts": [
+                        {
+                            "name": "protobuf-java",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.5.1/protobuf-java-3.5.1.jar"
+                        },
+                        {
+                            "name": "protobuf-java",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.5.1/protobuf-java-3.5.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-reflect",
+                    "version": "2.12.6",
+                    "artifacts": [
+                        {
+                            "name": "scala-reflect",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.6/scala-reflect-2.12.6.jar"
+                        },
+                        {
+                            "name": "scala-reflect",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.6/scala-reflect-2.12.6-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "io.circe",
+                    "name": "circe-jawn_2.12",
+                    "version": "0.10.0",
+                    "artifacts": [
+                        {
+                            "name": "circe-jawn_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-jawn_2.12/0.10.0/circe-jawn_2.12-0.10.0.jar"
+                        },
+                        {
+                            "name": "circe-jawn_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-jawn_2.12/0.10.0/circe-jawn_2.12-0.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.tensorflow",
+                    "name": "proto",
+                    "version": "1.11.0",
+                    "artifacts": [
+                        {
+                            "name": "proto",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/proto/1.11.0/proto-1.11.0.jar"
+                        },
+                        {
+                            "name": "proto",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/tensorflow/proto/1.11.0/proto-1.11.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.platanios",
+                    "name": "tensorflow_2.12",
+                    "version": "0.4.0",
+                    "artifacts": [
+                        {
+                            "name": "tensorflow_2.12",
+                            "classifier": "linux-cpu-x86_64",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow_2.12/0.4.0/tensorflow_2.12-0.4.0-linux-cpu-x86_64.jar"
+                        },
+                        {
+                            "name": "tensorflow_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow_2.12/0.4.0/tensorflow_2.12-0.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-kernel_2.12",
+                    "version": "1.4.0",
+                    "artifacts": [
+                        {
+                            "name": "cats-kernel_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.12/1.4.0/cats-kernel_2.12-1.4.0.jar"
+                        },
+                        {
+                            "name": "cats-kernel_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.12/1.4.0/cats-kernel_2.12-1.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "macro-compat_2.12",
+                    "version": "1.1.1",
+                    "artifacts": [
+                        {
+                            "name": "macro-compat_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/macro-compat_2.12/1.1.1/macro-compat_2.12-1.1.1.jar"
+                        },
+                        {
+                            "name": "macro-compat_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/macro-compat_2.12/1.1.1/macro-compat_2.12-1.1.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "machinist_2.12",
+                    "version": "0.6.5",
+                    "artifacts": [
+                        {
+                            "name": "machinist_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/machinist_2.12/0.6.5/machinist_2.12-0.6.5.jar"
+                        },
+                        {
+                            "name": "machinist_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/machinist_2.12/0.6.5/machinist_2.12-0.6.5-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.github.ghik",
+                    "name": "silencer-lib_2.12",
+                    "version": "0.6",
+                    "artifacts": [
+                        {
+                            "name": "silencer-lib_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/ghik/silencer-lib_2.12/0.6/silencer-lib_2.12-0.6.jar"
+                        },
+                        {
+                            "name": "silencer-lib_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/ghik/silencer-lib_2.12/0.6/silencer-lib_2.12-0.6-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "io.circe",
+                    "name": "circe-generic_2.12",
+                    "version": "0.10.0",
+                    "artifacts": [
+                        {
+                            "name": "circe-generic_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-generic_2.12/0.10.0/circe-generic_2.12-0.10.0.jar"
+                        },
+                        {
+                            "name": "circe-generic_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-generic_2.12/0.10.0/circe-generic_2.12-0.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "io.circe",
+                    "name": "circe-numbers_2.12",
+                    "version": "0.10.0",
+                    "artifacts": [
+                        {
+                            "name": "circe-numbers_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-numbers_2.12/0.10.0/circe-numbers_2.12-0.10.0.jar"
+                        },
+                        {
+                            "name": "circe-numbers_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-numbers_2.12/0.10.0/circe-numbers_2.12-0.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.hamcrest",
+                    "name": "hamcrest-core",
+                    "version": "1.3",
+                    "artifacts": [
+                        {
+                            "name": "hamcrest-core",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+                        },
+                        {
+                            "name": "hamcrest-core",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "ch.qos.logback",
+                    "name": "logback-core",
+                    "version": "1.2.3",
+                    "artifacts": [
+                        {
+                            "name": "logback-core",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3.jar"
+                        },
+                        {
+                            "name": "logback-core",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "2.12.10",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.10/scala-library-2.12.10.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.10/scala-library-2.12.10-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.spire-math",
+                    "name": "jawn-parser_2.12",
+                    "version": "0.13.0",
+                    "artifacts": [
+                        {
+                            "name": "jawn-parser_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/spire-math/jawn-parser_2.12/0.13.0/jawn-parser_2.12-0.13.0.jar"
+                        },
+                        {
+                            "name": "jawn-parser_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/spire-math/jawn-parser_2.12/0.13.0/jawn-parser_2.12-0.13.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "io.circe",
+                    "name": "circe-parser_2.12",
+                    "version": "0.10.0",
+                    "artifacts": [
+                        {
+                            "name": "circe-parser_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-parser_2.12/0.10.0/circe-parser_2.12-0.10.0.jar"
+                        },
+                        {
+                            "name": "circe-parser_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-parser_2.12/0.10.0/circe-parser_2.12-0.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "junit",
+                    "name": "junit",
+                    "version": "4.12",
+                    "artifacts": [
+                        {
+                            "name": "junit",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.jar"
+                        },
+                        {
+                            "name": "junit",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.12/junit-4.12-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "io.circe",
+                    "name": "circe-core_2.12",
+                    "version": "0.10.0",
+                    "artifacts": [
+                        {
+                            "name": "circe-core_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-core_2.12/0.10.0/circe-core_2.12-0.10.0.jar"
+                        },
+                        {
+                            "name": "circe-core_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/io/circe/circe-core_2.12/0.10.0/circe-core_2.12-0.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.chuusai",
+                    "name": "shapeless_2.12",
+                    "version": "2.3.3",
+                    "artifacts": [
+                        {
+                            "name": "shapeless_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/chuusai/shapeless_2.12/2.3.3/shapeless_2.12-2.3.3.jar"
+                        },
+                        {
+                            "name": "shapeless_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/com/chuusai/shapeless_2.12/2.3.3/shapeless_2.12-2.3.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.platanios",
+                    "name": "tensorflow-jni_2.12",
+                    "version": "0.4.0",
+                    "artifacts": [
+                        {
+                            "name": "tensorflow-jni_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-jni_2.12/0.4.0/tensorflow-jni_2.12-0.4.0.jar"
+                        },
+                        {
+                            "name": "tensorflow-jni_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/platanios/tensorflow-jni_2.12/0.4.0/tensorflow-jni_2.12-0.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-macros_2.12",
+                    "version": "1.4.0",
+                    "artifacts": [
+                        {
+                            "name": "cats-macros_2.12",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-macros_2.12/1.4.0/cats-macros_2.12-1.4.0.jar"
+                        },
+                        {
+                            "name": "cats-macros_2.12",
+                            "classifier": "sources",
+                            "path": "/home/gadgil/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-macros_2.12/1.4.0/cats-macros_2.12-1.4.0-sources.jar"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
