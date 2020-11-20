@@ -14,7 +14,12 @@ import org.tensorflow.op.linalg.MatMul
 import org.tensorflow.ndarray._
 
 object HelloTensorFlow {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) : Unit = {
+    run()
+    GradientDescentExample.run()
+  }
+
+  def run() = {
     println("Hello TensorFlow " + TensorFlow.version())
     val x = TInt32.scalarOf(10)
     Using(ConcreteFunction.create(dblFunc)) { dbl =>
