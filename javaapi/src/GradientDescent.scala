@@ -51,6 +51,7 @@ object GradientDescentExample {
       session.run(var1Initializer);
 
       session.run(update)
+      session.run(update)
 
       /* initialize the accumulators */
       val result = session.runner().addTarget(tf.init()).fetch("var0").run();

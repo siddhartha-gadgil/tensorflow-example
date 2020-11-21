@@ -8,7 +8,12 @@ import SimpleGeom._
 case class SimpleGeom(n: Int, p: Double) {
   val probVars: Vector[api.tf.Variable[Float]] = (0 to n)
     .map(j =>
-      tf.variable[Float](s"p$j", Shape(1, 1), initializer = tf.ConstantInitializer[Float](1.0f / n)))
+      tf.variable[Float](
+        s"p$j",
+        Shape(1, 1),
+        initializer = tf.ConstantInitializer[Float](1.0f / n)
+      )
+    )
     .toVector
 
   val totProbErr: Output[Float] =
@@ -17,9 +22,8 @@ case class SimpleGeom(n: Int, p: Double) {
     })
 
   val matchErrors: Vector[Output[Float]] =
-    probVars.zip(probVars.tail).map {
-      case (x0, x1) =>
-        delSq(x1, tf.multiply(x0, p.toFloat))
+    probVars.zip(probVars.tail).map { case (x0, x1) =>
+      delSq(x1, tf.multiply(x0, p.toFloat))
     }
 
   val posErrs: Vector[Output[Float]] =
@@ -53,7 +57,9 @@ case class SimpleGeom(n: Int, p: Double) {
 object SimpleGeom {
   def delSq(x: Output[Float], y: Output[Float]): Output[Float] =
     tf.square(
-      tf.divide(tf.subtract(x, y),
-                tf.add(tf.add(tf.abs(x), tf.abs(y)), math.pow(10, -7).toFloat))
+      tf.divide(
+        tf.subtract(x, y),
+        tf.add(tf.add(tf.abs(x), tf.abs(y)), math.pow(10, -7).toFloat)
+      )
     )
 }
