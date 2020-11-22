@@ -16,7 +16,8 @@ import org.tensorflow.ndarray._
 object HelloTensorFlow {
   def main(args: Array[String]) : Unit = {
     run()
-    GradientDescentExample.run()
+    // GradientDescentExample.run()
+    MSEGradientDescent.run()
   }
 
   def run() = {
