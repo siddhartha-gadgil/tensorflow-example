@@ -1,7 +1,7 @@
 package javaapi
 
 import org.tensorflow._
-import org.tensorflow.op._
+import org.tensorflow.op._, core.Variable
 import org.tensorflow.op.core.Placeholder
 import org.tensorflow.op.math.Add
 import org.tensorflow.types._
@@ -21,38 +21,34 @@ object MSEGradientDescent {
   def run(): Unit = {
     Using.Manager { use =>
       val graph: Graph = use(new Graph())
-      val tf : Ops = Ops.create(graph)
+      val tf: Ops = Ops.create(graph)
 
-      val var0 = tf.variable(tf.constant(var0Init))
-      val var1 = tf.variable(tf.constant(var1Init))
+      val var0: Variable[TFloat32] = tf.variable(tf.constant(var0Init))
+      val var1: Variable[TFloat32] = tf.variable(tf.constant(var1Init))
 
       val instance = new GradientDescent(graph, learningRate)
 
       val loss = tf.math.squaredDifference(var0, var1)
       val minimize = instance.minimize(loss)
 
-      val session = use(new Session(graph))
+      val session: Session = use(new Session(graph))
 
       /* initialize the local variables */
       session.run(tf.init())
 
-      val result0 = session.runner().fetch(var0).run();
-      def res0(n: Int) =
-        result0.get(0).expect(TFloat32.DTYPE).data().getFloat(n)
-      val result1 = session.runner().fetch(var1).run();
-      def res1(n: Int) =
-        result1.get(0).expect(TFloat32.DTYPE).data().getFloat(n)
+      def varLookup(v: Variable[TFloat32], sess: Session): Vector[Float] = {
+        val result = sess.runner().fetch(v).run()
+        val data = result.get(0).expect(TFloat32.DTYPE).data()
+        (0 until (data.size().toInt)).toVector.map(n => data.getFloat(n))
+      }
 
       (0 to 20).foreach { n =>
         println(
-          s"ran minimize $n times, fetched var0 as ${res0(0)} and ${res0(
-            1
-          )} and var1 as ${res1(0)} and ${res1(1)}"
+          s"ran minimize $n times, fetched var0 as ${varLookup(var0, session)}  and var1 as ${varLookup(var1, session)} "
         )
         session.run(minimize)
 
       }
-
     }
   }
 }
