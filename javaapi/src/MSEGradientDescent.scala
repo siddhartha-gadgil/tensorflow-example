@@ -28,7 +28,8 @@ object MSEGradientDescent {
 
       val instance = new GradientDescent(graph, learningRate)
 
-      val loss = tf.math.squaredDifference(var0, var1)
+      val loss =
+        tf.reduceSum(tf.math.squaredDifference(var0, var1), tf.constant(0))
       val minimize = instance.minimize(loss)
 
       val session: Session = use(new Session(graph))
