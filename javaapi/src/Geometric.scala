@@ -10,6 +10,7 @@ import org.tensorflow.ndarray._
 import org.tensorflow.framework.optimizers.{Optimizer, GradientDescent}
 import scala.jdk.CollectionConverters._
 import GeometricSimple.opLookup
+import org.tensorflow.framework.optimizers.AdaGrad
 
 case class GeometricSimple(
     n: Int,
@@ -25,7 +26,7 @@ case class GeometricSimple(
     tf.math.sigmoid(x)
   )
   val total = ps.reduce[Operand[TFloat32]](tf.math.add(_, _))
-  val totalError = tf.math.squaredDifference(total, tf.constant(1.0f))
+  val totalError = tf.math.squaredDifference(tf.math.log(total), tf.constant(0.0f))
   val matchErrors: Vector[Operand[TFloat32]] =
     (0 until (n - 1)).toVector.map { j =>
       tf.math.squaredDifference(
@@ -43,7 +44,7 @@ case class GeometricSimple(
     (0 to 20000).foreach { n =>
       if (n % 1000 == 0)
         println(
-          s"ran minimize $n times, fetched  ${ps.map(p => opLookup(p, session))} "
+          s"ran minimize $n times, fetched  ${ps.map(p => opLookup(p, session))}, total ${opLookup(total, session)} "
         )
       session.run(minimize)
     }

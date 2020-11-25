@@ -19,6 +19,7 @@ object HelloTensorFlow {
     // GradientDescentExample.run()
     MSEGradientDescent.run()
     GeometricSimple.run()
+    SimpleLinearModel.run()
   }
 
   def run() = {
