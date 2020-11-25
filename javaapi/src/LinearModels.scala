@@ -17,16 +17,22 @@ import GeometricSimple.opLookup
 object SimpleLinearModel {
   val rnd = new scala.util.Random()
 
-  val simpleData = (0 to 1500).map { n =>
+  val simpleData = (0 to 15000).map { n =>
     val x = rnd.nextGaussian().toFloat * 10
     val y = 2 * x + 1
+    (x, y)
+  }
+
+  val noisyData = (0 to 15000).map { n =>
+    val x = rnd.nextGaussian().toFloat * 10
+    val y = 2 * x + 1 + rnd.nextGaussian().toFloat
     (x, y)
   }
 
   def run(): Unit = Using(new Graph()) { graph =>
     println("Running simple model")
     val simpleModel = SimpleLinearModel(graph, 0.1f)
-    simpleModel.fit(simpleData)
+    simpleModel.fit(noisyData)
   }
 }
 
@@ -36,7 +42,7 @@ case class SimpleLinearModel(graph: Graph, learningRate: Float) {
 
   val optimizer = new AdaGrad(graph, learningRate)
 
-  val m = tf.variable(tf.constant(1f))
+  val m = tf.variable(tf.constant(0.1f))
   val c = tf.variable(tf.constant(0f))
 
   val x = tf.withName("X").placeholder(TFloat32.DTYPE)
@@ -51,7 +57,7 @@ case class SimpleLinearModel(graph: Graph, learningRate: Float) {
   def fit(xy: Seq[(Float, Float)]) = Using(new Session(graph)) { session =>
     session.run(tf.init())
     xy.foreach { case (xdata, ydata) =>
-      println(s"feeding $xdata, $ydata")
+    //   println(s"feeding $xdata, $ydata")
       val xTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(xdata)))
       val yTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(ydata)))
       session
@@ -60,9 +66,10 @@ case class SimpleLinearModel(graph: Graph, learningRate: Float) {
         .feed(y, yTensor)
         .addTarget(minimize)
         .run()
-      println(
-        s"After feeding y: $ydata and x: $xdata, got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
-      )
+    //   println(
+    //     s"After feeding y: $ydata and x: $xdata, got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
+    //   )
     }
+    println(s"Got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}")
   }
 }
