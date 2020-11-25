@@ -1,18 +1,26 @@
 package javaapi
 
-import org.tensorflow._, ndarray._
+import org.tensorflow._, ndarray._, types._
 import org.tensorflow.op._, core.Variable
 import org.tensorflow.op.core.Placeholder
 import org.tensorflow.op.math.Add
-import org.tensorflow.types._
+import org.tensorflow.types._, family.TType
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.{Optimizer, GradientDescent, AdaGrad}
+import org.tensorflow.framework.optimizers.{
+  Optimizer,
+  GradientDescent,
+  AdaGrad,
+  AdaDelta,
+  Adam
+}
 import scala.jdk.CollectionConverters._
 import GeometricSimple.opLookup
 import org.tensorflow.framework.optimizers.AdaGrad
 
 import GeometricSimple.opLookup
+import Optimizer.GradAndVar
+import scala.jdk.CollectionConverters._
 
 object SimpleLinearModel {
   val rnd = new scala.util.Random()
@@ -23,7 +31,14 @@ object SimpleLinearModel {
     (x, y)
   }
 
-  val noisyData = (0 to 15000).map { n =>
+  val mixedData = (0 to 15000).map { n =>
+    val x = rnd.nextGaussian().toFloat * 10
+    val parity = if (n % 2 == 0) 1 else -1
+    val y = 2 * x + parity + rnd.nextGaussian().toFloat
+    (x, y)
+  }
+
+  val noisyData = (0 to 20000).map { n =>
     val x = rnd.nextGaussian().toFloat * 10
     val y = 2 * x + 1 + rnd.nextGaussian().toFloat
     (x, y)
@@ -39,6 +54,11 @@ object SimpleLinearModel {
       val batchModel = new BatchLinearModel(graph, 0.1f)
       println("Fitting batch model")
       batchModel.fit(noisyData, 20)
+    }
+    Using(new Graph()) { graph =>
+      val batchModel = new ForkedLinearModel(graph, 0.1f)
+      println("Fitting forked model")
+      batchModel.fit(mixedData)
     }
   }
 }
@@ -80,7 +100,7 @@ class SimpleLinearModel(graph: Graph, learningRate: Float) {
 class BatchLinearModel(graph: Graph, learningRate: Float) {
   val tf = Ops.create(graph)
 
-  val optimizer = new AdaGrad(graph, learningRate)
+  val optimizer = new Adam(graph, learningRate)
 
   val m = tf.variable(tf.constant(Array(Array(0.1f))))
   val c = tf.variable(tf.constant(Array(Array(0.0f))))
@@ -126,5 +146,61 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
       println(
         s"Got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
       )
+  }
+}
+
+class ForkedLinearModel(graph: Graph, learningRate: Float) {
+  val tf = Ops.create(graph)
+
+  val optimizer = new AdaGrad(graph, learningRate)
+
+  val m = tf.variable(tf.constant(0.1f))
+  val c1 = tf.variable(tf.constant(0f))
+  val c2 = tf.variable(tf.constant(0f))
+
+  val x = tf.withName("X").placeholder(TFloat32.DTYPE)
+  val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
+
+  val loss1 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c1))
+  val loss2 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c2))
+
+  val Array(m1grad, c1grad) = graph
+    .addGradients(loss1.asOutput(), Array(m.asOutput(), c1.asOutput()))
+    .asInstanceOf[Array[Output[TFloat32]]]
+
+  val Array(m2grad, c2grad) = graph
+    .addGradients(loss2.asOutput(), Array(m.asOutput(), c2.asOutput()))
+    .asInstanceOf[Array[Output[TFloat32]]]
+
+  val gradsAndVars1: List[GradAndVar[_ <: TType]] = List(
+    new Optimizer.GradAndVar[TFloat32](m1grad, m.asOutput()),
+    new Optimizer.GradAndVar(c1grad, c1.asOutput())
+  )
+
+  val gradsAndVars2: List[GradAndVar[_ <: TType]] = List(
+    new Optimizer.GradAndVar[TFloat32](m2grad, m.asOutput()),
+    new Optimizer.GradAndVar(c2grad, c2.asOutput())
+  )
+
+  val minimize1 = optimizer.applyGradients(gradsAndVars1.asJava, "minimize1")
+
+  val minimize2 = optimizer.applyGradients(gradsAndVars2.asJava, "minimize2")
+
+  def fit(xy: Seq[(Float, Float)]) = Using(new Session(graph)) { session =>
+    session.run(tf.init())
+    xy.zipWithIndex.foreach { case ((xdata, ydata), j) =>
+      val xTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(xdata)))
+      val yTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(ydata)))
+      val min = if (j % 2 == 0) minimize1 else minimize2
+      session
+        .runner()
+        .feed(x, xTensor)
+        .feed(y, yTensor)
+        .addTarget(min)
+        .run()
+    }
+    println(
+      s"Got m = ${opLookup(m, session)}, c1 = ${opLookup(c1, session)}, c2 = ${opLookup(c2, session)}"
+    )
   }
 }
