@@ -20,6 +20,7 @@ object HelloTensorFlow {
     MSEGradientDescent.run()
     // GeometricSimple.run()
     SimpleLinearModel.run()
+    LabelImage.run()
   }
 
   def run() = {

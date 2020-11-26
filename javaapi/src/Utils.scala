@@ -1,7 +1,6 @@
 package javaapi
 
 import scala.jdk.CollectionConverters._
-import scala.jdk.CollectionConverters._
 import scala.util.Using
 
 import org.tensorflow._
