@@ -18,7 +18,7 @@ object HelloTensorFlow {
     run()
     // GradientDescentExample.run()
     MSEGradientDescent.run()
-    // GeometricSimple.run()
+    GeometricSimple.run()
     SimpleLinearModel.run()
     LabelImage.run()
   }

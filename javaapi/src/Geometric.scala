@@ -22,7 +22,7 @@ case class GeometricSimple(
   val xs = (0 until (n)).toVector.map(j =>
     tf.withName(s"x$j").variable(tf.constant(0f))
   )
-  val ps: Vector[Operand[TFloat32]] = xs.map(x => //x
+  val ps: Vector[Operand[TFloat32]] = xs.map(x => 
     tf.math.sigmoid(x)
   )
   val total = ps.reduce[Operand[TFloat32]](tf.math.add(_, _))
@@ -42,7 +42,7 @@ case class GeometricSimple(
   def runSession(): Unit = Using(new Session(graph)) { session =>
     session.run(tf.init())
     (0 to 20000).foreach { n =>
-      if (n % 1000 == 0)
+      if (n % 5000 == 0)
         println(
           s"ran minimize $n times, fetched  ${ps.map(p => opLookup(p, session))}, total ${opLookup(total, session)} "
         )

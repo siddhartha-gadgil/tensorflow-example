@@ -69,7 +69,7 @@ object LabelImage {
       println(
         f"BEST MATCH: ${labels.get(bestLabelIdx)}%s (${labelProbabilities(bestLabelIdx) * 100f}%.2f%% likely)"
       )
-
+      println(s"Shape of output ${labelProbabilityTensor.shape()}")
     }
 
   }

@@ -61,9 +61,23 @@ object SimpleLinearModel {
       println("saved model")
     }
     println("Seeking bundle")
-    val savedModelBundle = SavedModelBundle.load("model", SavedModelBundle.DEFAULT_TAG)
+    val savedModelBundle =
+      SavedModelBundle.load("model", SavedModelBundle.DEFAULT_TAG)
     println("Got bundle, seeking m by looking up in saved session")
     println(namedLookup("M", savedModelBundle.session()))
+    val output = savedModelBundle
+      .session()
+      .runner()
+      .feed("X", TFloat32.tensorOf(StdArrays.ndCopyOf(Array(1.0f))))
+      .feed("Y", TFloat32.tensorOf(StdArrays.ndCopyOf(Array(2.0f))))
+      .fetch("loss1")
+      .addTarget("minimize1")
+      .run()
+      .get(0)
+      .expect(TFloat32.DTYPE)
+      .data()
+      .getFloat()
+    println(s"Loss: $output")
   }
 }
 
@@ -139,7 +153,7 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
           .feed(y, yTensor)
           .addTarget(minimize)
           .run()
-        // session.save("bundle/variables")
+      // session.save("bundle/variables")
       }
       println(
         s"Got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
@@ -159,8 +173,8 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
   val x = tf.withName("X").placeholder(TFloat32.DTYPE)
   val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
 
-  val loss1 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c1))
-  val loss2 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c2))
+  val loss1 = tf.withName("loss1").math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c1))
+  val loss2 = tf.withName("loss2").math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c2))
 
   val minimize1 = minimizer(graph, optimizer, loss1, Array(m, c1), "minimize1")
 
@@ -168,8 +182,8 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
 
   lazy val signature = Signature
     .builder()
-    .input("x", x)
-    .input("y", y)
+    .input("X", x)
+    .input("Y", y)
     .output("loss1", loss1)
     .output("loss2", loss2)
     .build()
