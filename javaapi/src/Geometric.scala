@@ -9,7 +9,7 @@ import scala.util.Using
 import org.tensorflow.ndarray._
 import org.tensorflow.framework.optimizers.{Optimizer, GradientDescent}
 import scala.jdk.CollectionConverters._
-import GeometricSimple.opLookup
+import Utils._
 import org.tensorflow.framework.optimizers.AdaGrad
 
 case class GeometricSimple(
@@ -61,11 +61,5 @@ object GeometricSimple {
     Using(new Graph()) { graph =>
       GeometricSimple(n, p, graph, learningRate).runSession()
     }
-  }
-
-  def opLookup(v: Operand[TFloat32], sess: Session): Float = {
-    val result = sess.runner().fetch(v).run()
-    val data = result.get(0).expect(TFloat32.DTYPE).data()
-    data.getFloat()
   }
 }

@@ -15,12 +15,11 @@ import org.tensorflow.framework.optimizers.{
   Adam
 }
 import scala.jdk.CollectionConverters._
-import GeometricSimple.opLookup
 import org.tensorflow.framework.optimizers.AdaGrad
 
-import GeometricSimple.opLookup
 import Optimizer.GradAndVar
 import scala.jdk.CollectionConverters._
+import Utils._
 
 object SimpleLinearModel {
   val rnd = new scala.util.Random()
@@ -31,7 +30,7 @@ object SimpleLinearModel {
     (x, y)
   }
 
-  val mixedData = (0 to 15000).map { n =>
+  val mixedData = (0 to 50000).map { n =>
     val x = rnd.nextGaussian().toFloat * 10
     val parity = if (n % 2 == 0) 1 else -1
     val y = 2 * x + parity + rnd.nextGaussian().toFloat
@@ -129,19 +128,12 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
         val yData = v.map(_._2).toArray
         val xTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(xData)))
         val yTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(yData)))
-        // val output =
         session
           .runner()
           .feed(x, xTensor)
           .feed(y, yTensor)
           .addTarget(minimize)
-          // .fetch(const)
           .run()
-      // val data = output.get(0).expect(TFloat32.DTYPE).data()
-      // val size = data.size().toInt
-      // scala.util.Try(println((0 until size).toVector.map(j => data.getFloat(0, j))))
-      // println(size)
-
       }
       println(
         s"Got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
@@ -164,27 +156,9 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
   val loss1 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c1))
   val loss2 = tf.math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c2))
 
-  val Array(m1grad, c1grad) = graph
-    .addGradients(loss1.asOutput(), Array(m.asOutput(), c1.asOutput()))
-    .asInstanceOf[Array[Output[TFloat32]]]
+  val minimize1 = minimizer(graph, optimizer, loss1, Array(m, c1), "minimize1")
 
-  val Array(m2grad, c2grad) = graph
-    .addGradients(loss2.asOutput(), Array(m.asOutput(), c2.asOutput()))
-    .asInstanceOf[Array[Output[TFloat32]]]
-
-  val gradsAndVars1: List[GradAndVar[_ <: TType]] = List(
-    new Optimizer.GradAndVar[TFloat32](m1grad, m.asOutput()),
-    new Optimizer.GradAndVar(c1grad, c1.asOutput())
-  )
-
-  val gradsAndVars2: List[GradAndVar[_ <: TType]] = List(
-    new Optimizer.GradAndVar[TFloat32](m2grad, m.asOutput()),
-    new Optimizer.GradAndVar(c2grad, c2.asOutput())
-  )
-
-  val minimize1 = optimizer.applyGradients(gradsAndVars1.asJava, "minimize1")
-
-  val minimize2 = optimizer.applyGradients(gradsAndVars2.asJava, "minimize2")
+  val minimize2 = minimizer(graph, optimizer, loss2, Array(m, c2), "minimize2")
 
   def fit(xy: Seq[(Float, Float)]) = Using(new Session(graph)) { session =>
     session.run(tf.init())
@@ -204,3 +178,4 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
     )
   }
 }
+
