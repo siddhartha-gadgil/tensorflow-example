@@ -6,3 +6,4 @@ out/
 .bloop/
 .metals/
 model/
+tmp/

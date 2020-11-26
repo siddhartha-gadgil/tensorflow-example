@@ -22,18 +22,57 @@ import types._, family.TType
 import core.Variable
 import family.TType
 import org.tensorflow.op.image.DecodeJpeg
+import org.tensorflow.proto.framework.GraphDef
 
 object LabelImage {
-  def maxIndex(probabilities: Array[Float]): Int =
+  def maxIndex(probabilities: Vector[Float]): Int =
     probabilities.zipWithIndex.maxBy(_._1)._2
 
   val modelDir = "javaapi/resources"
+
   val labels =
     Files.readAllLines(
       Paths.get(modelDir, "imagenet_comp_graph_label_strings.txt")
     )
 
   val imageFile: String = "javaapi/resources/grace_hopper.jpg"
+
+  val graphDefBytes =
+    Files.readAllBytes(Paths.get(modelDir, "tensorflow_inception_graph.pb"))
+
+  val image = constructAndExecuteGraphToNormalizeImage(imageFile)
+
+  val graphDef = GraphDef.parseFrom(graphDefBytes)
+
+  def run() = {
+    Using.Manager { use =>
+      val graph = use(new Graph())
+
+      graph.importGraphDef(graphDef)
+
+      val modelSession = use(new Session(graph))
+
+      val labelProbabilityTensor = modelSession
+        .runner()
+        .feed("input", image)
+        .fetch("output")
+        .run()
+        .get(0)
+        .expect(TFloat32.DTYPE)
+        .data
+
+      val labelProbabilities =
+        (0 until labelProbabilityTensor.size().toInt).toArray
+          .map(j => labelProbabilityTensor.getFloat(0, j))
+          .toVector
+      val bestLabelIdx = maxIndex(labelProbabilities)
+      println(
+        f"BEST MATCH: ${labels.get(bestLabelIdx)}%s (${labelProbabilities(bestLabelIdx) * 100f}%.2f%% likely)"
+      )
+
+    }
+
+  }
 
   def constructAndExecuteGraphToNormalizeImage(
       filename: String
@@ -67,25 +106,5 @@ object LabelImage {
     val session = new Session(graph)
     session.runner().fetch(image).run().get(0).expect(TFloat32.DTYPE)
   }
-
-  val savedModelBundle =
-    SavedModelBundle.load(modelDir, SavedModelBundle.DEFAULT_TAG)
-
-  val modelSession = savedModelBundle.session()
-
-  val image = constructAndExecuteGraphToNormalizeImage(imageFile)
-
-  val labelProbabilityTensor = modelSession
-    .runner()
-    .feed("input", image)
-    .fetch("output")
-    .run()
-    .get(0)
-    .expect(TFloat32.DTYPE)
-    .data
-
-    def run() = {
-        println(s"Tensor: $labelProbabilityTensor")
-    }
 
 }
