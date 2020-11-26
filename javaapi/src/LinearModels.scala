@@ -55,10 +55,15 @@ object SimpleLinearModel {
       batchModel.fit(noisyData, 20)
     }
     Using(new Graph()) { graph =>
-      val batchModel = new ForkedLinearModel(graph, 0.1f)
+      val forkedModel = new ForkedLinearModel(graph, 0.1f)
       println("Fitting forked model")
-      batchModel.fit(mixedData)
+      forkedModel.fit(mixedData)
+      println("saved model")
     }
+    println("Seeking bundle")
+    val savedModelBundle = SavedModelBundle.load("model", SavedModelBundle.DEFAULT_TAG)
+    println("Got bundle, seeking m by looking up in saved session")
+    println(namedLookup("M", savedModelBundle.session()))
   }
 }
 
@@ -134,6 +139,7 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
           .feed(y, yTensor)
           .addTarget(minimize)
           .run()
+        // session.save("bundle/variables")
       }
       println(
         s"Got m = ${opLookup(m, session)} and c = ${opLookup(c, session)}"
@@ -146,7 +152,7 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
 
   val optimizer = new AdaGrad(graph, learningRate)
 
-  val m = tf.variable(tf.constant(0.1f))
+  val m = tf.withName("M").variable(tf.constant(0.1f))
   val c1 = tf.variable(tf.constant(0f))
   val c2 = tf.variable(tf.constant(0f))
 
@@ -159,6 +165,16 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
   val minimize1 = minimizer(graph, optimizer, loss1, Array(m, c1), "minimize1")
 
   val minimize2 = minimizer(graph, optimizer, loss2, Array(m, c2), "minimize2")
+
+  lazy val signature = Signature
+    .builder()
+    .input("x", x)
+    .input("y", y)
+    .output("loss1", loss1)
+    .output("loss2", loss2)
+    .build()
+
+  lazy val asFunc = ConcreteFunction.create(signature, graph)
 
   def fit(xy: Seq[(Float, Float)]) = Using(new Session(graph)) { session =>
     session.run(tf.init())
@@ -176,6 +192,10 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
     println(
       s"Got m = ${opLookup(m, session)}, c1 = ${opLookup(c1, session)}, c2 = ${opLookup(c2, session)}"
     )
+    val concreteFunc = ConcreteFunction.create(
+      signature,
+      session
+    )
+    concreteFunc.save("model")
   }
 }
-

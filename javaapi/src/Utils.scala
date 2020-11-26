@@ -13,7 +13,7 @@ import org.tensorflow.op.math.Add
 import org.tensorflow.types._
 
 import ndarray._
-import types._
+import types._, family.TType
 import core.Variable
 import family.TType
 import Optimizer.GradAndVar
@@ -21,6 +21,12 @@ import Optimizer.GradAndVar
 object Utils {
   def opLookup(v: Operand[TFloat32], sess: Session): Float = {
     val result = sess.runner().fetch(v).run()
+    val data = result.get(0).expect(TFloat32.DTYPE).data()
+    data.getFloat()
+  }
+
+  def namedLookup(name: String, sess: Session): Float = {
+    val result = sess.runner().fetch(name).run()
     val data = result.get(0).expect(TFloat32.DTYPE).data()
     data.getFloat()
   }
