@@ -5,7 +5,8 @@ object javaapi extends ScalaModule{
   def scalaVersion = scalaV
   def ivyDeps = Agg(
     ivy"org.tensorflow:tensorflow-core-platform:0.2.0",
-    ivy"org.tensorflow:tensorflow-framework:0.2.0"
+    ivy"org.tensorflow:tensorflow-framework:0.2.0",
+    ivy"com.lihaoyi::os-lib:0.7.1"
   )
 }
 

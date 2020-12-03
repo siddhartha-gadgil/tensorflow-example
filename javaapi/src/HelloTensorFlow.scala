@@ -21,6 +21,7 @@ object HelloTensorFlow {
     GeometricSimple.run()
     SimpleLinearModel.run()
     LabelImage.run()
+    SVM.run()
   }
 
   def run() = {
