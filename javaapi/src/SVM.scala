@@ -48,7 +48,7 @@ object SVM {
 class SVM(graph: Graph, learningRate: Float, svmC: Float) {
   val tf = Ops.create(graph)
   val b = tf.variable(tf.constant(Array(Array(0.1f))))
-  val w = tf.variable(tf.constant(Array(Array(0.1f, 0.7f))))
+  val w = tf.variable(tf.constant(Array(Array(0.1f), Array(0.7f)))) // column
 
   val x = tf.withName("X").placeholder(TFloat32.DTYPE)
   val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
@@ -81,7 +81,8 @@ class SVM(graph: Graph, learningRate: Float, svmC: Float) {
       xy.foreach { case (ydata, (x1, x2)) =>
         // println(s"fitting $ydata, ($x1, $x2)")
         val xTensor =
-          TFloat32.tensorOf(StdArrays.ndCopyOf(Array(Array(x1), Array(x2))))
+          TFloat32.tensorOf(StdArrays.ndCopyOf(Array(Array(x1, x2)))) // row
+        //   println(s"${xTensor.shape()} is multiplied with ${w.asOutput().shape()} and added to ${b.asOutput().shape()}")
         val yTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(Array(ydata))))
         session
           .runner()
@@ -95,7 +96,7 @@ class SVM(graph: Graph, learningRate: Float, svmC: Float) {
       println(s"b = $bValue")
       val wValue = {
         val data = dataLookup(w, session)
-        Vector(data.getFloat(0, 0), data.getFloat(0, 1))
+        Vector(data.getFloat(0, 0), data.getFloat(1, 0))
       }
       println(s"w = $wValue")
     // println(s"Got b = ${opLookup(b, session)} and w = ${opLookup(w, session)}")
