@@ -68,8 +68,8 @@ object SimpleLinearModel {
     val output = savedModelBundle
       .session()
       .runner()
-      .feed("X", TFloat32.tensorOf(StdArrays.ndCopyOf(Array(1.0f))))
-      .feed("Y", TFloat32.tensorOf(StdArrays.ndCopyOf(Array(2.0f))))
+      .feed("X", TFloat32.scalarOf(1.0f))
+      .feed("Y", TFloat32.scalarOf(2.0f))
       .fetch("loss1")
       .addTarget("minimize1")
       .run()
@@ -102,8 +102,8 @@ class SimpleLinearModel(graph: Graph, learningRate: Float) {
   def fit(xy: Seq[(Float, Float)]) = Using(new Session(graph)) { session =>
     session.run(tf.init())
     xy.foreach { case (xdata, ydata) =>
-      val xTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(xdata)))
-      val yTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(ydata)))
+      val xTensor = TFloat32.scalarOf(xdata)
+      val yTensor = TFloat32.scalarOf(ydata)
       session
         .runner()
         .feed(x, xTensor)
