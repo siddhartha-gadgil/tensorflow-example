@@ -155,7 +155,7 @@ class Word2Vec(graph: Graph, embedDim: Int, vocabSize: Int) {
   val contextIndices = tf.withName("context").placeholder(TInt32.DTYPE)
 
   val labels = // tf.constant(Array(0.0f, 1.0f))
-  tf.withName("label").placeholder(TFloat32.DTYPE)
+    tf.withName("label").placeholder(TFloat32.DTYPE)
 
   val contextInputVec = tf.oneHot(
     contextIndices,
@@ -174,30 +174,41 @@ class Word2Vec(graph: Graph, embedDim: Int, vocabSize: Int) {
 
   val wordVec = {
     tf
-    .withName("wordvec")
-    .linalg
-    .matMul(
-      wordEmbed,
-      wordInputVec,
-      MatMul.transposeA(false).transposeB(true)
-    )
+      .withName("wordvec")
+      .linalg
+      .matMul(
+        wordEmbed,
+        wordInputVec,
+        MatMul.transposeA(false).transposeB(true)
+      )
   }
 
   val contextVec = {
-    tf.withName("contextvec") .linalg.matMul(
-    contextEmbed,
-    contextInputVec,
-    MatMul.transposeA(false).transposeB(true)
-  )
+    tf.withName("contextvec")
+      .linalg
+      .matMul(
+        contextEmbed,
+        contextInputVec,
+        MatMul.transposeA(false).transposeB(true)
+      )
   }
 
-  val dots = tf.withName("dots").reduceSum(tf.math.mul(wordVec, contextVec), tf.constant(0))
+  val dots = tf
+    .withName("dots")
+    .reduceSum(tf.math.mul(wordVec, contextVec), tf.constant(0))
 
   // val ytrue = tf.withName("ytrue").math.add(labels, tf.constant(Array(0.0f, 0.0f)))
 
   val predictions = tf.math.sigmoid(dots)
 
+  val cost1 = tf.math.neg(tf.math.mul(labels, tf.math.log(predictions)))
+
+  val cost2 = tf.math.mul(
+    tf.math.sub(tf.onesLike(labels), labels),
+    tf.math.log(tf.math.sub(tf.onesLike(predictions), predictions))
+  )
+
   val losses =
-    tf.withName("loss").math.squaredDifference (labels, predictions)
+     tf.withName("loss").reduceSum(tf.math.sub(cost1, cost2), tf.constant(0))
 
 }
