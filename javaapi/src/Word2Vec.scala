@@ -161,8 +161,21 @@ class Word2Vec(
     tf.math.log(tf.math.sub(tf.constant(1f), predictions))
   )
 
+  // max(x, 0) - x * z + log(1 + exp(-abs(x)))
+  val stableCost = tf.math.add(
+    tf.math.sub(tf.math.maximum(dots, tf.constant(0f)), tf.math.mul(dots, labels)),
+    tf.math.log(
+      tf.math.add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dots))))
+    )
+  )
+
   val loss =
-    tf.withName("loss").reduceSum(tf.math.sub(cost1, cost2), tf.constant(0))
+    tf.withName("loss")
+      .reduceSum(
+        // tf.math.sub(cost1, cost2),
+        stableCost,
+        tf.constant(0)
+      )
 
   val optimizer = new Adam(graph, learningRate)
 
