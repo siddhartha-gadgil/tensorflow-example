@@ -28,8 +28,6 @@ object Word2Vec {
 
   val negSamples = 5
 
-  val embedDim = 20
-
   val tokens: Vector[String] = os.read
     .lines(os.pwd / "javaapi" / "resources" / "shakespeare.txt")
     .flatMap { l =>
@@ -38,11 +36,9 @@ object Word2Vec {
     .toVector
   // .take(100)
 
-  val paddedTokens = "<pad>" +: tokens
+  val vocabVector = ("<pad>" +: tokens).distinct
 
-  val vocab: Map[String, Int] = paddedTokens.distinct.zipWithIndex.toMap
-
-  val inverseVocab: Map[Int, String] = vocab.map { case (t, n) => (n, t) }
+  val vocab: Map[String, Int] = vocabVector.zipWithIndex.toMap
 
   val rnd = new Random()
 
@@ -71,25 +67,56 @@ object Word2Vec {
     (vocab(word), vocab(context))
   }
 
-  def dataGroup(): Iterator[(Int, Int, List[Int])] = {
+  def dataGroup(negSamles: Int): Iterator[(Int, Int, List[Int])] = {
     Iterator.from(skipGramIndices).map { case (word, context) =>
       (word, context, negList(negSamples))
     }
   }
 
-  def trainingData(epochs: Int): Iterator[(Int, Int, List[Int])] =
-    Iterator.range(0, epochs).flatMap(_ => dataGroup())
+  def trainingData(
+      epochs: Int,
+      negSamles: Int
+  ): Iterator[(Int, Int, List[Int])] =
+    Iterator.range(0, epochs).flatMap(_ => dataGroup(negSamles))
 
   def trainedTensors(
-      epochs: Int = 1
+      epochs: Int = 1,
+      embedDim: Int = 20,
+      negSamles: Int = 5
   ): Try[(Tensor[TFloat32], Tensor[TFloat32])] = Using(new Graph) { graph =>
     val w2v = new Word2Vec(graph, embedDim, vocab.size)
-    val data = trainingData(epochs)
-    println(s"training with data size ${skipGramIndices.size * epochs}")
+    val data = trainingData(epochs, negSamles)
+    println(s"Training with data size ${skipGramIndices.size * epochs}")
     w2v.fit(data)
   }.flatten
 
+  def wordRepresentations(
+      epochs: Int = 1,
+      embedDim: Int = 20,
+      negSamles: Int = 5
+  ): WordRepresentations = {
+    val (wordTensor, contextTensor) =
+      trainedTensors(epochs, embedDim, negSamles).fold(
+        { err =>
+          println(err.getMessage())
+          err.printStackTrace()
+          throw err
+        },
+        identity(_)
+      )
+    val matrix = (0 until vocabVector.size).toVector.map { j =>
+      val wordVec =
+        (0 until embedDim).toVector.map(i => wordTensor.data().getFloat(i, j))
+      val contextVec =
+        (0 until embedDim).toVector.map(i =>
+          contextTensor.data().getFloat(i, j)
+        )
+      wordVec ++ contextVec
+    }
+    WordRepresentations(vocabVector, matrix, 2 * embedDim)
+  }
 }
+
 class Word2Vec(
     graph: Graph,
     embedDim: Int,
@@ -163,7 +190,8 @@ class Word2Vec(
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
   val stableCost = tf.math.add(
-    tf.math.sub(tf.math.maximum(dots, tf.constant(0f)), tf.math.mul(dots, labels)),
+    tf.math
+      .sub(tf.math.maximum(dots, tf.constant(0f)), tf.math.mul(dots, labels)),
     tf.math.log(
       tf.math.add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dots))))
     )
@@ -222,3 +250,34 @@ class Word2Vec(
 
 }
 
+object WordRepresentations {
+  def squaredDistance(v1: Vector[Float], v2: Vector[Float]): Float =
+    v1.zip(v2).map { case (x, y) => (x - y) * (x - y) }.sum
+
+  def oppositeVertex(
+      v1: Vector[Float],
+      v2: Vector[Float],
+      v3: Vector[Float]
+  ): Vector[Float] =
+    v1.zip(v2.zip(v3)).map { case (x, (y, z)) => y + z - x }
+}
+case class WordRepresentations(
+    vocabVector: Vector[String],
+    matrix: Vector[Vector[Float]],
+    dim: Int
+) {
+  import WordRepresentations._
+
+  val vocab: Map[String, Int] = vocabVector.zipWithIndex.toMap
+
+  val vec: Map[String, Vector[Float]] = vocabVector.zipWithIndex.map {
+    case (w, n) => w -> matrix(n)
+  }.toMap
+
+  def nearestWord(v: Vector[Float]) =
+    vocabVector.minBy(w => squaredDistance(vec(w), v))
+
+  def sortedWords(v: Vector[Float]) =
+    vocabVector.sortBy(w => -squaredDistance(vec(w), v))
+
+}
