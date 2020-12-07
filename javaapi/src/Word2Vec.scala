@@ -26,8 +26,6 @@ import org.tensorflow.op.linalg.MatMul
 object Word2Vec {
   val windowWidth = 2
 
-  val negSamples = 5
-
   val tokens: Vector[String] = os.read
     .lines(os.pwd / "javaapi" / "resources" / "shakespeare.txt")
     .flatMap { l =>
@@ -67,7 +65,7 @@ object Word2Vec {
     (vocab(word), vocab(context))
   }
 
-  def dataGroup(negSamles: Int): Iterator[(Int, Int, List[Int])] = {
+  def dataGroup(negSamples: Int): Iterator[(Int, Int, List[Int])] = {
     Iterator.from(skipGramIndices).map { case (word, context) =>
       (word, context, negList(negSamples))
     }
@@ -75,17 +73,17 @@ object Word2Vec {
 
   def trainingData(
       epochs: Int,
-      negSamles: Int
+      negSamples: Int
   ): Iterator[(Int, Int, List[Int])] =
-    Iterator.range(0, epochs).flatMap(_ => dataGroup(negSamles))
+    Iterator.range(0, epochs).flatMap(_ => dataGroup(negSamples))
 
   def trainedTensors(
       epochs: Int = 1,
       embedDim: Int = 20,
-      negSamles: Int = 5
+      negSamples: Int = 2
   ): Try[(Tensor[TFloat32], Tensor[TFloat32])] = Using(new Graph) { graph =>
     val w2v = new Word2Vec(graph, embedDim, vocab.size)
-    val data = trainingData(epochs, negSamles)
+    val data = trainingData(epochs, negSamples)
     println(s"Training with data size ${skipGramIndices.size * epochs}")
     w2v.fit(data)
   }.flatten
@@ -93,10 +91,10 @@ object Word2Vec {
   def wordRepresentations(
       epochs: Int = 1,
       embedDim: Int = 20,
-      negSamles: Int = 5
+      negSamples: Int = 2
   ): WordRepresentations = {
     val (wordTensor, contextTensor) =
-      trainedTensors(epochs, embedDim, negSamles).fold(
+      trainedTensors(epochs, embedDim, negSamples).fold(
         { err =>
           println(err.getMessage())
           err.printStackTrace()
