@@ -31,7 +31,7 @@ object Word2Vec {
   val tokens: Vector[String] = os.read
     .lines(os.pwd / "javaapi" / "resources" / "shakespeare.txt")
     .flatMap { l =>
-      l.split("\\s+").map(_.toLowerCase())
+      l.split("[\\s.!?\\-:,;]+").map(_.toLowerCase())
     }
     .toVector
   // .take(100)
@@ -278,6 +278,6 @@ case class WordRepresentations(
     vocabVector.minBy(w => squaredDistance(vec(w), v))
 
   def sortedWords(v: Vector[Float]) =
-    vocabVector.sortBy(w => -squaredDistance(vec(w), v))
+    vocabVector.sortBy(w => squaredDistance(vec(w), v))
 
 }
