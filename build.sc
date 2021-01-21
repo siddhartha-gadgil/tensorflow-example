@@ -6,7 +6,8 @@ object javaapi extends ScalaModule{
   def ivyDeps = Agg(
     ivy"org.tensorflow:tensorflow-core-platform:0.2.0",
     ivy"org.tensorflow:tensorflow-framework:0.2.0",
-    ivy"com.lihaoyi::os-lib:0.7.1"
+    ivy"com.lihaoyi::os-lib:0.7.1",
+    ivy"org.creativescala::doodle:0.9.21"
   )
 }
 
