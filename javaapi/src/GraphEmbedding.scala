@@ -41,6 +41,25 @@ object DoodleDraw {
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
+
+  def linesImage(
+      lines: List[((Float, Float), (Float, Float))],
+      base: Image
+  ): Image =
+    lines match {
+      case Nil => base
+      case head :: next =>
+        head match {
+          case ((x1, y1), (x2, y2)) =>
+            Image
+              .line(x2 - x1, y2 - y1)
+              .at(Point((x1 + x2)/2, (y1 + y2)/2))
+              .on(linesImage(next, base))
+        }
+    }
+
+  def linesPlot(xy: List[(Float, Float)], lines: List[((Float, Float), (Float, Float))]) =
+    linesImage(lines, xyImage(xy)).draw()
 }
 
 object GraphEmbedding {
@@ -295,12 +314,14 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       val txd = tundedData.get(0).expect(TFloat32.DTYPE).data()
       val tyd = tundedData.get(1).expect(TFloat32.DTYPE).data()
       val tpoints =
-        (0 until (inc.size)).map(n =>
-          (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f)
-        )
+        (0 until (inc.size))
+          .map(n => (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f))
+          .toVector
+      val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
       println(tpoints.mkString(", "))
       tpoints.foreach { case (x, y) => println(s"$x, $y") }
-      DoodleDraw.xyPlot(tpoints.toList)
+    //   DoodleDraw.xyPlot(tpoints.toList)
+      DoodleDraw.linesPlot(tpoints.toList, tLines.toList)
     }
   }
 }
