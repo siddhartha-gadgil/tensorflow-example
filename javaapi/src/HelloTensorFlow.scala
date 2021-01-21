@@ -22,6 +22,7 @@ object HelloTensorFlow {
     SimpleLinearModel.run()
     LabelImage.run()
     SVM.run()
+    GraphEmbedding.run()
   }
 
   def run() = {

@@ -120,7 +120,10 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
 
   val optimizer = new Adam(graph, learningRate)
 
-  val m = tf.variable(tf.constant(Array(Array(0.1f))))
+  val m0 = tf.variable(tf.constant(0.1f))
+
+  val m = tf.reshape(m0, tf.constant(Shape.of(1, 1)))
+  // tf.variable(tf.constant(Array(Array(0.1f))))
   val c = tf.variable(tf.constant(Array(Array(0.0f))))
 
   val x = tf.withName("X").placeholder(TFloat32.DTYPE)
