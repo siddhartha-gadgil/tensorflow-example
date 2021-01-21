@@ -33,7 +33,7 @@ object DoodleDraw {
     xy match {
       case Nil => Image.empty
       case head :: next =>
-        Image.circle(5).at(Point(head._1, head._2)).on(xyImage(next))
+        Image.circle(10).fillColor(Color.blue).at(Point(head._1, head._2)).on(xyImage(next))
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
@@ -41,8 +41,9 @@ object DoodleDraw {
 
 object GraphEmbedding {
   val rnd = new Random()
-  val linMat = Array.tabulate(10, 10) { case (i: Int, j: Int) =>
-    if (scala.math.abs(i - j) < 2) 1.0f else 0.0f
+  val N = 20
+  val linMat = Array.tabulate(N, N) { case (i: Int, j: Int) =>
+    if (scala.math.abs(i - j) < 2 || Set(i, j) == Set(0, N - 1)) 1.0f else 0.0f
   }
   def run() = Using(new Graph()) { graph =>
     println("running graph embedding")
