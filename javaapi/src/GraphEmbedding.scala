@@ -33,10 +33,21 @@ import doodle.interact.syntax._
 import doodle.core._
 import scala.collection.immutable.Nil
 import scala.concurrent._, duration._
+import java.awt.Font
 
 object DoodleDraw {
   import doodle.image.syntax._
   import doodle.java2d._
+  import cats.implicits._
+  import doodle.syntax._
+  import doodle.core._
+
+  val frame = Frame.size(300, 100)
+
+  lazy val canvas1 : Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync
+
+  lazy val canvas2 : Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync
+
   def xyImage(xy: List[(Float, Float)]): Image =
     xy match {
       case Nil => Image.empty
@@ -49,6 +60,11 @@ object DoodleDraw {
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
+
+  def stepsText(n: Int) =
+    text[Algebra, Drawing](s"Steps: $n").font(font.Font.defaultSansSerif.size(30))
+
+  def showSteps(n: Int, canvas: Canvas = canvas1) = stepsText(n).drawWithCanvas(canvas)
 
   def linesImage(
       lines: List[((Float, Float), (Float, Float))],
@@ -71,6 +87,7 @@ object DoodleDraw {
       lines: List[((Float, Float), (Float, Float))]
   ) =
     linesImage(lines, xyImage(xy)).draw()
+
 }
 
 object GraphEmbedding {
@@ -78,6 +95,8 @@ object GraphEmbedding {
   val N = 20
 
   var fitDone = false
+
+  var stepsRun = 0
 
   var dataSnap
       : (Vector[(Float, Float)], Vector[((Float, Float), (Float, Float))]) =
@@ -92,10 +111,10 @@ object GraphEmbedding {
       val g = new GraphEmbedding(linMat.size, graph)
       val animReal =
         Reactor
-          .init(0)
-          .onTick(_ + 20)
-          .tickRate(1.milli)
-          .render { j =>
+          .init(())
+          .onTick(_ => () )
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun)
             val (points, lines) = dataSnap
             DoodleDraw.linesImage(
               lines.toList,
@@ -112,10 +131,9 @@ object GraphEmbedding {
       fitDone = false
       val animReal =
         Reactor
-          .init(0)
-          .onTick(_ + 20)
-          .tickRate(1.milli)
-          .render { j =>
+          .init(())
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun, DoodleDraw.canvas2)
             val (points, lines) = dataSnap
             DoodleDraw.linesImage(
               lines.toList,
@@ -220,7 +238,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       println("initialized")
       val incT = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(inc)))
       println("Tuning")
-      (1 to steps).foreach { _ =>
+      (1 to steps).foreach { j =>
         val tData = session
           .runner()
           .feed(incidence, incT)
@@ -235,6 +253,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
             .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
             .toVector
         val lines = points.zip(points.tail :+ points.head)
+        stepsRun = j
         dataSnap = (points, lines)
       // (points, lines)
       }
@@ -317,7 +336,7 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       session.run(tf.init())
       println("initialized")
       println("Tuning")
-      (1 to steps).foreach { _ =>
+      (1 to steps).foreach { j =>
         val i1 = rnd.nextInt(N)
         val i2 = rnd.nextInt(N)
         val q = inc(i1)(i2)
@@ -339,6 +358,7 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
             .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
             .toVector
         val lines = points.zip(points.tail :+ points.head)
+        stepsRun = j
         dataSnap = (points, lines)
       }
       fitDone = true
