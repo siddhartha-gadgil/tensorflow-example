@@ -85,11 +85,11 @@ object GraphEmbedding {
       val g = new GraphEmbedding(linMat.size, graph)
       g.fit(linMat)
     }
-    Using(new Graph()) { graph =>
-      println("fitting in sequence")
-      val g = new GraphEmbeddingSeq(linMat.size, graph)
-      g.fitSeq(linMat)
-    }
+    // Using(new Graph()) { graph =>
+    //   println("fitting in sequence")
+    //   val g = new GraphEmbeddingSeq(linMat.size, graph)
+    //   g.fitSeq(linMat)
+    // }
   }
 
   def pointsAndLines(txs: TFloat32, tys: TFloat32, n: Int) = {
@@ -175,27 +175,6 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     tf.math.squaredDifference(y1, y2)
   )
 
-  val pSing = tf.math.div(
-    tf.constant(1.0f),
-    tf.math.add(tf.constant(1.0f + epsilon), dist)
-  )
-
-  val qSing = tf.placeholder(TFloat32.DTYPE)
-
-  val lSing = tf.math.neg(
-    (
-      tf.math.add(
-        tf.math.mul(qSing, tf.math.log(pSing)),
-        tf.math.mul(
-          tf.math.sub(tf.constant(1.0f), qSing),
-          tf.math.log(tf.math.sub(tf.constant(1.0f), pSing))
-        )
-      )
-    )
-  )
-
-//   val minSing = optimizer.minimize(lSing)
-
   def dot(v: Operand[TFloat32], w: Operand[TFloat32]) =
     tf.reduceSum(tf.math.mul(v, w), tf.constant(0))
 
@@ -218,7 +197,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
             val yd = tData.get(1).expect(TFloat32.DTYPE).data()
             val points =
               (0 until (inc.size))
-                .map(n => (xd.getFloat(n) * 100f, yd.getFloat(n) * 100f))
+                .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
                 .toVector
             val lines = points.zip(points.tail :+ points.head)
             // println(points.head)
@@ -238,7 +217,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       val tyd = dataLookup(ys, session)
       val tpoints =
         (0 until (inc.size)).map(n =>
-          (txd.getFloat(n) * 40f, tyd.getFloat(n) * 40f)
+          (txd.getFloat(n) * 60f, tyd.getFloat(n) * 60f)
         )
       DoodleDraw.xyPlot(tpoints.toList)
       import doodle.reactor._
@@ -247,14 +226,14 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         Reactor
           .init(0)
           .onTick(_ + 1)
-          .tickRate(1.micro)
+          .tickRate(10.micro)
           .render { j =>
             val (points, lines) = animData(j)
             
             DoodleDraw.linesImage(lines.toList, DoodleDraw.xyImage(points.toList))
           }
           .stop(_ >= steps - 1)
-      anim.run(Frame.size(1000, 1000))
+      anim.run(Frame.size(800, 800))
     }
   }
 
