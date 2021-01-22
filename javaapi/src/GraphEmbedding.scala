@@ -104,14 +104,28 @@ object GraphEmbedding {
           }
           .stop(_ => fitDone)
       animReal.run(Frame.size(800, 800))
-
       g.fit(linMat)
     }
-    // Using(new Graph()) { graph =>
-    //   println("fitting in sequence")
-    //   val g = new GraphEmbeddingSeq(linMat.size, graph)
-    //   g.fitSeq(linMat)
-    // }
+    Using(new Graph()) { graph =>
+      println("fitting in sequence")
+      val g = new GraphEmbeddingSeq(linMat.size, graph)
+      fitDone = false
+      val animReal =
+        Reactor
+          .init(0)
+          .onTick(_ + 20)
+          .tickRate(1.milli)
+          .render { j =>
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw.xyImage(points.toList)
+            )
+          }
+          .stop(_ => fitDone)
+      animReal.run(Frame.size(800, 800))
+      g.fitSeq(linMat)
+    }
   }
 
   def pointsAndLines(txs: TFloat32, tys: TFloat32, n: Int) = {
@@ -222,7 +236,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
             .toVector
         val lines = points.zip(points.tail :+ points.head)
         dataSnap = (points, lines)
-        // (points, lines)
+      // (points, lines)
       }
       fitDone = true
       println("Tuning complete")
@@ -297,7 +311,7 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
   def dot(v: Operand[TFloat32], w: Operand[TFloat32]) =
     tf.reduceSum(tf.math.mul(v, w), tf.constant(0))
 
-  def fitSeq(inc: Array[Array[Float]], steps: Int = 500000) = {
+  def fitSeq(inc: Array[Array[Float]], steps: Int = 300000) = {
     val N = inc.size
     Using(new Session(graph)) { session =>
       session.run(tf.init())
@@ -309,14 +323,25 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         val q = inc(i1)(i2)
         val ind1 = Array.tabulate(N)(j => if (j == i1) 1.0f else 0.0f)
         val ind2 = Array.tabulate(N)(j => if (j == i2) 1.0f else 0.0f)
-        session
+        val tData = session
           .runner()
           .feed(qSing, TFloat32.scalarOf(q))
           .feed(indicator1, TFloat32.vectorOf(ind1: _*))
           .feed(indicator2, TFloat32.vectorOf(ind2: _*))
           .addTarget(minSing)
+          .fetch(xs)
+          .fetch(ys)
           .run()
+        val xd = tData.get(0).expect(TFloat32.DTYPE).data()
+        val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+        val points =
+          (0 until (inc.size))
+            .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
+            .toVector
+        val lines = points.zip(points.tail :+ points.head)
+        dataSnap = (points, lines)
       }
+      fitDone = true
       println("Finished tuning")
       val tundedData = session
         .runner()
