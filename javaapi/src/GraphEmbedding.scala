@@ -22,10 +22,18 @@ import scala.jdk.CollectionConverters._
 import Utils._
 import scala.util._
 import GraphEmbedding._
+import doodle.core._
 import doodle.image._
+import doodle.image.syntax._
+import doodle.image.syntax.core._
+import doodle.java2d._
+import doodle.reactor._
+import doodle.interact.syntax._
 // Colors and other useful stuff
 import doodle.core._
 import scala.collection.immutable.Nil
+import scala.concurrent._, duration._
+
 object DoodleDraw {
   import doodle.image.syntax._
   import doodle.java2d._
@@ -53,12 +61,15 @@ object DoodleDraw {
           case ((x1, y1), (x2, y2)) =>
             Image
               .line(x2 - x1, y2 - y1)
-              .at(Point((x1 + x2)/2, (y1 + y2)/2))
+              .at(Point((x1 + x2) / 2, (y1 + y2) / 2))
               .on(linesImage(next, base))
         }
     }
 
-  def linesPlot(xy: List[(Float, Float)], lines: List[((Float, Float), (Float, Float))]) =
+  def linesPlot(
+      xy: List[(Float, Float)],
+      lines: List[((Float, Float), (Float, Float))]
+  ) =
     linesImage(lines, xyImage(xy)).draw()
 }
 
@@ -79,6 +90,15 @@ object GraphEmbedding {
       val g = new GraphEmbeddingSeq(linMat.size, graph)
       g.fitSeq(linMat)
     }
+  }
+
+  def pointsAndLines(txs: TFloat32, tys: TFloat32, n: Int) = {
+    val tpoints =
+      (0 until n)
+        .map(n => (txs.getFloat(n) * 50f, tys.getFloat(n) * 50f))
+        .toVector
+    val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
+    (tpoints, tLines)
   }
 }
 
@@ -183,26 +203,28 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
-      val pd = dataLookup(probs, session)
-      val pmat = Vector.tabulate(numPoints, numPoints) { case (i, j) =>
-        pd.getFloat(i, j)
-      }
-      val xd = dataLookup(xs, session)
-      val yd = dataLookup(ys, session)
-      val points =
-        (0 until (inc.size)).map(n => (xd.getFloat(n), yd.getFloat(n)))
-      println(points.mkString(", "))
-      println(pmat.mkString("\n"))
       val incT = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(inc)))
-      val lData = session.runner().feed(incidence, incT).fetch(loss).run()
-      println(lData)
-      val l = lData.get(0).expect(TFloat32.DTYPE).data()
-      println(l)
-      println(l.getFloat())
       println("Tuning")
-      (1 to steps).foreach(_ =>
-        session.runner().feed(incidence, incT).addTarget(minimize).run()
-      )
+      val animData = (1 to steps)
+        .map{_ =>
+          val tData = session
+            .runner()
+            .feed(incidence, incT)
+            .addTarget(minimize)
+            .fetch(xs)
+            .fetch(ys)
+            .run()
+          val xd = tData.get(0).expect(TFloat32.DTYPE).data()
+            val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+            val points =
+              (0 until (inc.size))
+                .map(n => (xd.getFloat(n) * 100f, yd.getFloat(n) * 100f))
+                .toVector
+            val lines = points.zip(points.tail :+ points.head)
+            // println(points.head)
+            (points, lines)
+        }
+        .toVector
       val tundedData = session
         .runner()
         .feed(incidence, incT)
@@ -212,20 +234,27 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         .expect(TFloat32.DTYPE)
         .data()
       println(tundedData.getFloat())
-      val tpd = dataLookup(probs, session)
-      val tpmat = Vector.tabulate(numPoints, numPoints) { case (i, j) =>
-        tpd.getFloat(i, j)
-      }
-      println(tpmat.mkString("\n"))
       val txd = dataLookup(xs, session)
       val tyd = dataLookup(ys, session)
       val tpoints =
         (0 until (inc.size)).map(n =>
-          (txd.getFloat(n) * 100f, tyd.getFloat(n) * 100f)
+          (txd.getFloat(n) * 40f, tyd.getFloat(n) * 40f)
         )
-      println(tpoints.mkString(", "))
-      tpoints.foreach { case (x, y) => println(s"$x, $y") }
       DoodleDraw.xyPlot(tpoints.toList)
+      import doodle.reactor._
+      import doodle.interact.syntax._
+      val anim =
+        Reactor
+          .init(0)
+          .onTick(_ + 1)
+          .tickRate(1.micro)
+          .render { j =>
+            val (points, lines) = animData(j)
+            
+            DoodleDraw.linesImage(lines.toList, DoodleDraw.xyImage(points.toList))
+          }
+          .stop(_ >= steps - 1)
+      anim.run(Frame.size(1000, 1000))
     }
   }
 
@@ -291,11 +320,9 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       (1 to steps).foreach { _ =>
         val i1 = rnd.nextInt(N)
         val i2 = rnd.nextInt(N)
-        // println(i1)
         val q = inc(i1)(i2)
         val ind1 = Array.tabulate(N)(j => if (j == i1) 1.0f else 0.0f)
         val ind2 = Array.tabulate(N)(j => if (j == i2) 1.0f else 0.0f)
-        // println(ind1.toVector)
         session
           .runner()
           .feed(qSing, TFloat32.scalarOf(q))
@@ -310,7 +337,6 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         .fetch(xs)
         .fetch(ys)
         .run()
-      println(tundedData)
       val txd = tundedData.get(0).expect(TFloat32.DTYPE).data()
       val tyd = tundedData.get(1).expect(TFloat32.DTYPE).data()
       val tpoints =
@@ -318,9 +344,6 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
           .map(n => (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f))
           .toVector
       val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
-      println(tpoints.mkString(", "))
-      tpoints.foreach { case (x, y) => println(s"$x, $y") }
-    //   DoodleDraw.xyPlot(tpoints.toList)
       DoodleDraw.linesPlot(tpoints.toList, tLines.toList)
     }
   }
