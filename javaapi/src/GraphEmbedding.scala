@@ -76,6 +76,13 @@ object DoodleDraw {
 object GraphEmbedding {
   val rnd = new Random()
   val N = 20
+
+  var fitDone = false
+
+  var dataSnap
+      : (Vector[(Float, Float)], Vector[((Float, Float), (Float, Float))]) =
+    (Vector(), Vector())
+
   val linMat = Array.tabulate(N, N) { case (i: Int, j: Int) =>
     if (scala.math.abs(i - j) < 2 || Set(i, j) == Set(0, N - 1)) 1.0f else 0.0f
   }
@@ -83,6 +90,21 @@ object GraphEmbedding {
     Using(new Graph()) { graph =>
       println("running graph embedding")
       val g = new GraphEmbedding(linMat.size, graph)
+      val animReal =
+        Reactor
+          .init(0)
+          .onTick(_ + 20)
+          .tickRate(1.milli)
+          .render { j =>
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw.xyImage(points.toList)
+            )
+          }
+          .stop(_ => fitDone)
+      animReal.run(Frame.size(800, 800))
+
       g.fit(linMat)
     }
     // Using(new Graph()) { graph =>
@@ -178,32 +200,32 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
   def dot(v: Operand[TFloat32], w: Operand[TFloat32]) =
     tf.reduceSum(tf.math.mul(v, w), tf.constant(0))
 
-  def fit(inc: Array[Array[Float]], steps: Int = 100000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 30000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
       val incT = TFloat32.tensorOf(StdArrays.ndCopyOf(Array(inc)))
       println("Tuning")
-      val animData = (1 to steps)
-        .map{_ =>
-          val tData = session
-            .runner()
-            .feed(incidence, incT)
-            .addTarget(minimize)
-            .fetch(xs)
-            .fetch(ys)
-            .run()
-          val xd = tData.get(0).expect(TFloat32.DTYPE).data()
-            val yd = tData.get(1).expect(TFloat32.DTYPE).data()
-            val points =
-              (0 until (inc.size))
-                .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
-                .toVector
-            val lines = points.zip(points.tail :+ points.head)
-            // println(points.head)
-            (points, lines)
-        }
-        .toVector
+      (1 to steps).foreach { _ =>
+        val tData = session
+          .runner()
+          .feed(incidence, incT)
+          .addTarget(minimize)
+          .fetch(xs)
+          .fetch(ys)
+          .run()
+        val xd = tData.get(0).expect(TFloat32.DTYPE).data()
+        val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+        val points =
+          (0 until (inc.size))
+            .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
+            .toVector
+        val lines = points.zip(points.tail :+ points.head)
+        dataSnap = (points, lines)
+        // (points, lines)
+      }
+      fitDone = true
+      println("Tuning complete")
       val tundedData = session
         .runner()
         .feed(incidence, incT)
@@ -219,21 +241,6 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         (0 until (inc.size)).map(n =>
           (txd.getFloat(n) * 60f, tyd.getFloat(n) * 60f)
         )
-      DoodleDraw.xyPlot(tpoints.toList)
-      import doodle.reactor._
-      import doodle.interact.syntax._
-      val anim =
-        Reactor
-          .init(0)
-          .onTick(_ + 1)
-          .tickRate(10.micro)
-          .render { j =>
-            val (points, lines) = animData(j)
-            
-            DoodleDraw.linesImage(lines.toList, DoodleDraw.xyImage(points.toList))
-          }
-          .stop(_ >= steps - 1)
-      anim.run(Frame.size(800, 800))
     }
   }
 
