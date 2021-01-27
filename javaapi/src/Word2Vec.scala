@@ -40,8 +40,8 @@ object Word2Vec {
 
   val rnd = new Random()
 
-  def randomMatrix(rows: Int, columns: Int): Array[Array[Float]] = {
-    Array.fill(rows)(Array.fill(columns)(rnd.nextGaussian().toFloat))
+  def randomMatrix(rows: Int, columns: Int, scale: Double): Array[Array[Float]] = {
+    Array.fill(rows)(Array.fill(columns)((rnd.nextGaussian() * scale).toFloat))
   }
 
   def randomIndex() = rnd.nextInt(vocab.size)
@@ -89,11 +89,11 @@ object Word2Vec {
   }.flatten
 
   def wordRepresentations(
-      epochs: Int = 1,
-      embedDim: Int = 20,
-      negSamples: Int = 2
+      epochs: Int = 20,
+      embedDim: Int = 128,
+      negSamples: Int = 5
   ): WordRepresentations = {
-    val (wordTensor, contextTensor) =
+    val (wordTensor, _) =
       trainedTensors(epochs, embedDim, negSamples).fold(
         { err =>
           println(err.getMessage())
@@ -105,13 +105,9 @@ object Word2Vec {
     val matrix = (0 until vocabVector.size).toVector.map { j =>
       val wordVec =
         (0 until embedDim).toVector.map(i => wordTensor.data().getFloat(i, j))
-      val contextVec =
-        (0 until embedDim).toVector.map(i =>
-          contextTensor.data().getFloat(i, j)
-        )
-      wordVec ++ contextVec
+      wordVec
     }
-    WordRepresentations(vocabVector, matrix, 2 * embedDim)
+    WordRepresentations(vocabVector, matrix, embedDim)
   }
 }
 
@@ -145,10 +141,10 @@ class Word2Vec(
   )
 
   val wordEmbed =
-    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize)))
+    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize, scala.math.sqrt(1.0/vocabSize))))
 
   val contextEmbed =
-    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize)))
+    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize, scala.math.sqrt(1.0/vocabSize))))
 
   val initialize = tf.withName("init").init()
 
@@ -272,10 +268,10 @@ case class WordRepresentations(
     case (w, n) => w -> matrix(n)
   }.toMap
 
-  def nearestWord(v: Vector[Float]) =
+  def nearestWord(v: Vector[Float]): String =
     vocabVector.minBy(w => squaredDistance(vec(w), v))
 
-  def sortedWords(v: Vector[Float]) =
+  def sortedWords(v: Vector[Float]): Vector[String] =
     vocabVector.sortBy(w => squaredDistance(vec(w), v))
 
 }
