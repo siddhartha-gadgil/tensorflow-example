@@ -40,7 +40,11 @@ object Word2Vec {
 
   val rnd = new Random()
 
-  def randomMatrix(rows: Int, columns: Int, scale: Double): Array[Array[Float]] = {
+  def randomMatrix(
+      rows: Int,
+      columns: Int,
+      scale: Double
+  ): Array[Array[Float]] = {
     Array.fill(rows)(Array.fill(columns)((rnd.nextGaussian() * scale).toFloat))
   }
 
@@ -141,10 +145,26 @@ class Word2Vec(
   )
 
   val wordEmbed =
-    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize, scala.math.sqrt(1.0/vocabSize))))
+    tf.variable(
+      tf.constant(
+        Word2Vec.randomMatrix(
+          embedDim,
+          vocabSize,
+          scala.math.sqrt(1.0 / vocabSize)
+        )
+      )
+    )
 
   val contextEmbed =
-    tf.variable(tf.constant(Word2Vec.randomMatrix(embedDim, vocabSize, scala.math.sqrt(1.0/vocabSize))))
+    tf.variable(
+      tf.constant(
+        Word2Vec.randomMatrix(
+          embedDim,
+          vocabSize,
+          scala.math.sqrt(1.0 / vocabSize)
+        )
+      )
+    )
 
   val initialize = tf.withName("init").init()
 
@@ -247,6 +267,37 @@ class Word2Vec(
 object WordRepresentations {
   def squaredDistance(v1: Vector[Float], v2: Vector[Float]): Float =
     v1.zip(v2).map { case (x, y) => (x - y) * (x - y) }.sum
+
+  def pack(wr: WordRepresentations): (String, String) = (
+    wr.matrix.map(_.mkString("\t")).mkString("\n"),
+    wr.vocabVector.mkString("\n")
+  )
+
+  def save(name: String, wr: WordRepresentations): Unit = {
+    val (mt, v) = pack(wr)
+    os.write(os.pwd / "data" / name / "matrix.tsv", mt, createFolders = true)
+    os.write(os.pwd / "data" / name / "vocabulary.txt", v, createFolders = true)
+    os.write(
+      os.pwd / "data" / name / "dim.txt",
+      wr.dim.toString(),
+      createFolders = true
+    )
+  }
+
+  def unpack(mat: String, voc: String, dim: Int): WordRepresentations =
+    WordRepresentations(
+      voc.split("\n").toVector,
+      mat.split("\n").toVector.map(s => s.split("\n").toVector.map(_.toFloat)),
+      dim
+    )
+
+  def load(name: String): WordRepresentations = {
+    unpack(
+      os.read(os.pwd / "data" / name / "matrix.tsv"),
+      os.read(os.pwd / "data" / name / "vocabulary.txt"),
+      os.read(os.pwd / "data" / name / "dim.txt").toInt
+    )
+  }
 
   def oppositeVertex(
       v1: Vector[Float],
