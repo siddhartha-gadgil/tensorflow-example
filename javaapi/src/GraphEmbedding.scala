@@ -248,10 +248,14 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
           .run()
         val xd = tData.get(0).expect(TFloat32.DTYPE).data()
         val yd = tData.get(1).expect(TFloat32.DTYPE).data()
-        val points =
+        val unscaledPoints : Vector[(Float, Float)] =
           (0 until (inc.size))
-            .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
+            .map(n => (xd.getFloat(n), yd.getFloat(n)))
             .toVector
+        val maxX = unscaledPoints.map(_._1).max
+        val maxY = unscaledPoints.map(_._2).max
+        val scale = scala.math.min(300f / maxX, 300f/ maxY)
+        val points = unscaledPoints.map{case (x, y) => (x * scale, y* scale)}
         val lines = points.zip(points.tail :+ points.head)
         stepsRun = j
         dataSnap = (points, lines)
@@ -353,10 +357,14 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
           .run()
         val xd = tData.get(0).expect(TFloat32.DTYPE).data()
         val yd = tData.get(1).expect(TFloat32.DTYPE).data()
-        val points =
+        val unscaledPoints : Vector[(Float, Float)] =
           (0 until (inc.size))
-            .map(n => (xd.getFloat(n) * 40f, yd.getFloat(n) * 40f))
+            .map(n => (xd.getFloat(n), yd.getFloat(n)))
             .toVector
+        val maxX = unscaledPoints.map(_._1).max
+        val maxY = unscaledPoints.map(_._2).max
+        val scale = scala.math.min(300f / maxX, 300f/ maxY)
+        val points = unscaledPoints.map{case (x, y) => (x * scale, y* scale)}
         val lines = points.zip(points.tail :+ points.head)
         stepsRun = j
         dataSnap = (points, lines)
