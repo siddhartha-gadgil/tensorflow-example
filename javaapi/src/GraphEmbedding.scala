@@ -34,6 +34,9 @@ import doodle.core._
 import scala.collection.immutable.Nil
 import scala.concurrent._, duration._
 import java.awt.Font
+import org.tensorflow.op.core.Max
+import org.tensorflow.op.math.Maximum
+import org.tensorflow.op.core.Assign
 
 object DoodleDraw {
   import doodle.image.syntax._
@@ -116,8 +119,13 @@ object GraphEmbedding {
   }
 
   @scala.annotation.tailrec
-  def getSample(remaining: Vector[Int], size: Int, accum: Vector[Int] = Vector()): Vector[Int] =
-    if (size < 1) accum else {
+  def getSample(
+      remaining: Vector[Int],
+      size: Int,
+      accum: Vector[Int] = Vector()
+  ): Vector[Int] =
+    if (size < 1) accum
+    else {
       val pick = remaining(rnd.nextInt(remaining.size))
       getSample(remaining.filterNot(_ == pick), size - 1, accum :+ pick)
     }
@@ -331,6 +339,16 @@ class GraphEmbeddingBatched(
     tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
   )
 
+  val maxX: Max[TFloat32] = tf.max(tf.math.abs(fxs), tf.constant(Array(0)))
+
+  val maxY: Max[TFloat32] = tf.max(tf.math.abs(fys), tf.constant(Array(0)))
+
+  val maxCoordScale = tf.math.div(tf.math.maximum(maxX, maxY), tf.constant(2000f))
+
+  val rescaleX: Assign[TFloat32] = tf.assign(fxs, tf.math.div(fxs, maxCoordScale))
+
+  val rescaleY: Assign[TFloat32] = tf.assign(fys, tf.math.div(fys, maxCoordScale))  
+
   val projection = tf.placeholderWithDefault(
     tf.constant(Array.fill(batchSize)(Array.fill(numPoints)(1f))),
     Shape.of(batchSize, numPoints)
@@ -400,16 +418,16 @@ class GraphEmbeddingBatched(
 
   val minimize = optimizer.minimize(loss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 2000000) = {
+  def fit(inc: Array[Array[Float]], rescale: Boolean = false, steps: Int = 2000000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
       println("Tuning")
       (1 to steps).foreach { j =>
-        val batch = getSample((0 until(numPoints)).toVector, batchSize) .toArray
+        val batch = getSample((0 until (numPoints)).toVector, batchSize).toArray
         val incB = Array.tabulate(batchSize)(i =>
-          Array.tabulate(batchSize)(j =>
-          inc(batch(i))(batch(j))))
+          Array.tabulate(batchSize)(j => inc(batch(i))(batch(j)))
+        )
         val incT = TFloat32.tensorOf(
           StdArrays.ndCopyOf(
             incB
@@ -424,22 +442,34 @@ class GraphEmbeddingBatched(
             projMat
           )
         )
+        (if (rescale && j % 5000 == 0) Try{
+          session.runner().addTarget(rescaleX).addTarget(rescaleY).run()
+        }.fold(
+          fa => {
+            println(fa.getMessage())
+            println(fa.printStackTrace())
+            throw fa
+          },
+          identity(_)
+        ))
         // println(incB.map(_.toVector).toVector)
-        val tData = Try(session
-          .runner()
-          .feed(incidence, incT)
-          .feed(projection, projT)
-          .addTarget(minimize)
-          .fetch(fxs)
-          .fetch(fys)
-          .run()).fold(
-            fa => {
-          println(fa.getMessage())
-          println(fa.printStackTrace())
-          throw fa
-        },
-        identity(_)
-          )
+        val tData = Try(
+          session
+            .runner()
+            .feed(incidence, incT)
+            .feed(projection, projT)
+            .addTarget(minimize)
+            .fetch(fxs)
+            .fetch(fys)
+            .run()
+        ).fold(
+          fa => {
+            println(fa.getMessage())
+            println(fa.printStackTrace())
+            throw fa
+          },
+          identity(_)
+        )
         // println(tData)
         val xd = tData.get(0).expect(TFloat32.DTYPE).data()
         val yd = tData.get(1).expect(TFloat32.DTYPE).data()
@@ -561,19 +591,19 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
       }
       fitDone3 = true
       println("Finished tuning")
-      // val tundedData = session
-      //   .runner()
-      //   .fetch(xs)
-      //   .fetch(ys)
-      //   .run()
-      // val txd = tundedData.get(0).expect(TFloat32.DTYPE).data()
-      // val tyd = tundedData.get(1).expect(TFloat32.DTYPE).data()
-      // val tpoints =
-      //   (0 until (inc.size))
-      //     .map(n => (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f))
-      //     .toVector
-      // val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
-      // DoodleDraw.linesPlot(tpoints.toList, tLines.toList)
+    // val tundedData = session
+    //   .runner()
+    //   .fetch(xs)
+    //   .fetch(ys)
+    //   .run()
+    // val txd = tundedData.get(0).expect(TFloat32.DTYPE).data()
+    // val tyd = tundedData.get(1).expect(TFloat32.DTYPE).data()
+    // val tpoints =
+    //   (0 until (inc.size))
+    //     .map(n => (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f))
+    //     .toVector
+    // val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
+    // DoodleDraw.linesPlot(tpoints.toList, tLines.toList)
     }
   }
 }
