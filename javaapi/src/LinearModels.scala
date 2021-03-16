@@ -74,8 +74,8 @@ object SimpleLinearModel {
       .addTarget("minimize1")
       .run()
       .get(0)
-      .expect(TFloat32.DTYPE)
-      .data()
+      .asInstanceOf[TFloat32]
+      
       .getFloat()
     println(s"Loss: $output")
   }
@@ -90,8 +90,8 @@ class SimpleLinearModel(graph: Graph, learningRate: Float) {
   val m = tf.variable(tf.constant(0.1f))
   val c = tf.variable(tf.constant(0f))
 
-  val x = tf.withName("X").placeholder(TFloat32.DTYPE)
-  val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
+  val x = tf.withName("X").placeholder(classOf[TFloat32])
+  val y = tf.withName("Y").placeholder(classOf[TFloat32])
 
   val shape0 = Shape.of(1)
 
@@ -126,8 +126,8 @@ class BatchLinearModel(graph: Graph, learningRate: Float) {
   // tf.variable(tf.constant(Array(Array(0.1f))))
   val c = tf.variable(tf.constant(Array(Array(0.0f))))
 
-  val x = tf.withName("X").placeholder(TFloat32.DTYPE)
-  val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
+  val x = tf.withName("X").placeholder(classOf[TFloat32])
+  val y = tf.withName("Y").placeholder(classOf[TFloat32])
 
   val shape0 = Shape.of(1)
 
@@ -173,8 +173,8 @@ class ForkedLinearModel(graph: Graph, learningRate: Float) {
   val c1 = tf.variable(tf.constant(0f))
   val c2 = tf.variable(tf.constant(0f))
 
-  val x = tf.withName("X").placeholder(TFloat32.DTYPE)
-  val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
+  val x = tf.withName("X").placeholder(classOf[TFloat32])
+  val y = tf.withName("Y").placeholder(classOf[TFloat32])
 
   val loss1 = tf.withName("loss1").math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c1))
   val loss2 = tf.withName("loss2").math.squaredDifference(y, tf.math.add(tf.math.mul(m, x), c2))

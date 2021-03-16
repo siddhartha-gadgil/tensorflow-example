@@ -47,7 +47,7 @@ object DoodleDraw {
 
   val frame = Frame.size(300, 100)
 
-  lazy val canvas1: Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync
+  lazy val canvas1: Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync()
 
   // lazy val canvas2: Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync
 
@@ -245,7 +245,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     )
   )
 
-  val incidence = tf.placeholder(TFloat32.DTYPE)
+  val incidence = tf.placeholder(classOf[TFloat32])
 
   val loss = tf.math.neg(
     tf.reduceSum(
@@ -280,8 +280,8 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
           .fetch(xs)
           .fetch(ys)
           .run()
-        val xd = tData.get(0).expect(TFloat32.DTYPE).data()
-        val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+        val xd = tData.get(0).asInstanceOf[TFloat32]
+        val yd = tData.get(1).asInstanceOf[TFloat32]
         val unscaledPoints: Vector[(Float, Float)] =
           (0 until (inc.size))
             .map(n => (xd.getFloat(n), yd.getFloat(n)))
@@ -305,8 +305,8 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         .fetch(loss)
         .run()
         .get(0)
-        .expect(TFloat32.DTYPE)
-        .data()
+        .asInstanceOf[TFloat32]
+        
       println(tundedData.getFloat())
       val txd = dataLookup(xs, session)
       val tyd = dataLookup(ys, session)
@@ -397,7 +397,7 @@ class GraphEmbeddingBatched(
     )
   )
 
-  val incidence = tf.placeholder(TFloat32.DTYPE)
+  val incidence = tf.placeholder(classOf[TFloat32])
 
   val loss = tf.math.neg(
     tf.reduceSum(
@@ -471,8 +471,8 @@ class GraphEmbeddingBatched(
           identity(_)
         )
         // println(tData)
-        val xd = tData.get(0).expect(TFloat32.DTYPE).data()
-        val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+        val xd = tData.get(0).asInstanceOf[TFloat32]
+        val yd = tData.get(1).asInstanceOf[TFloat32]
         val unscaledPoints: Vector[(Float, Float)] =
           (0 until (inc.size))
             .map(n => (xd.getFloat(n), yd.getFloat(n)))
@@ -514,9 +514,9 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  val indicator1 = tf.placeholder(TFloat32.DTYPE)
+  val indicator1 = tf.placeholder(classOf[TFloat32])
 
-  val indicator2 = tf.placeholder(TFloat32.DTYPE)
+  val indicator2 = tf.placeholder(classOf[TFloat32])
 
   val x1 = dot(xs, indicator1)
   val y1 = dot(ys, indicator1)
@@ -533,7 +533,7 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     tf.math.add(tf.constant(1.0f + epsilon), dist)
   )
 
-  val qSing = tf.placeholder(TFloat32.DTYPE)
+  val qSing = tf.placeholder(classOf[TFloat32])
 
   val lSing = tf.math.neg(
     (
@@ -573,8 +573,8 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
           .fetch(xs)
           .fetch(ys)
           .run()
-        val xd = tData.get(0).expect(TFloat32.DTYPE).data()
-        val yd = tData.get(1).expect(TFloat32.DTYPE).data()
+        val xd = tData.get(0).asInstanceOf[TFloat32]
+        val yd = tData.get(1).asInstanceOf[TFloat32]
         val unscaledPoints: Vector[(Float, Float)] =
           (0 until (inc.size))
             .map(n => (xd.getFloat(n), yd.getFloat(n)))
@@ -596,8 +596,8 @@ class GraphEmbeddingSeq(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     //   .fetch(xs)
     //   .fetch(ys)
     //   .run()
-    // val txd = tundedData.get(0).expect(TFloat32.DTYPE).data()
-    // val tyd = tundedData.get(1).expect(TFloat32.DTYPE).data()
+    // val txd = tundedData.get(0).asInstanceOf[TFloat32]
+    // val tyd = tundedData.get(1).asInstanceOf[TFloat32]
     // val tpoints =
     //   (0 until (inc.size))
     //     .map(n => (txd.getFloat(n) * 50f, tyd.getFloat(n) * 50f))

@@ -85,7 +85,7 @@ object Word2Vec {
       epochs: Int = 1,
       embedDim: Int = 20,
       negSamples: Int = 2
-  ): Try[(Tensor[TFloat32], Tensor[TFloat32])] = Using(new Graph) { graph =>
+  ): Try[(TFloat32, TFloat32)] = Using(new Graph) { graph =>
     val w2v = new Word2Vec(graph, embedDim, vocab.size)
     val data = trainingData(epochs, negSamples)
     println(s"Training with data size ${skipGramIndices.size * epochs}")
@@ -108,7 +108,7 @@ object Word2Vec {
       )
     val matrix = (0 until vocabVector.size).toVector.map { j =>
       val wordVec =
-        (0 until embedDim).toVector.map(i => wordTensor.data().getFloat(i, j))
+        (0 until embedDim).toVector.map(i => wordTensor.getFloat(i, j))
       wordVec
     }
     WordRepresentations(vocabVector, matrix, embedDim)
@@ -123,7 +123,7 @@ class Word2Vec(
 ) {
   val tf = Ops.create(graph)
 
-  val wordIndices = tf.withName("word").placeholder(TInt32.DTYPE)
+  val wordIndices = tf.withName("word").placeholder(classOf[TInt32])
 
   val wordInputVec = tf.oneHot(
     wordIndices,
@@ -132,10 +132,10 @@ class Word2Vec(
     tf.constant(0.0f)
   )
 
-  val contextIndices = tf.withName("context").placeholder(TInt32.DTYPE)
+  val contextIndices = tf.withName("context").placeholder(classOf[TInt32])
 
   val labels = // tf.constant(Array(0.0f, 1.0f))
-    tf.withName("label").placeholder(TFloat32.DTYPE)
+    tf.withName("label").placeholder(classOf[TFloat32])
 
   val contextInputVec = tf.oneHot(
     contextIndices,
@@ -225,7 +225,7 @@ class Word2Vec(
 
   def fit(
       data: Iterator[(Int, Int, List[Int])]
-  ): Try[(Tensor[TFloat32], Tensor[TFloat32])] = Using(new Session(graph)) {
+  ): Try[(TFloat32, TFloat32)] = Using(new Session(graph)) {
     var count = 0
     session =>
       session.run(tf.init())
@@ -257,8 +257,8 @@ class Word2Vec(
       val output =
         session.runner().fetch(wordEmbed).fetch(contextEmbed).run()
       (
-        output.get(0).expect(TFloat32.DTYPE),
-        output.get(1).expect(TFloat32.DTYPE)
+        output.get(0).asInstanceOf[TFloat32],
+        output.get(1).asInstanceOf[TFloat32]
       )
   }
 

@@ -29,8 +29,8 @@ object GradientDescentExample {
       val session = use(new Session(graph))
       val tf = Ops.create(graph)
 
-      val var0 = tf.withName("var0").variable(shape0, TFloat32.DTYPE)
-      val var1 = tf.withName("var1").variable(shape1, TFloat32.DTYPE)
+      val var0 = tf.withName("var0").variable(shape0, classOf[TFloat32])
+      val var1 = tf.withName("var1").variable(shape1, classOf[TFloat32])
 
       val var0Initializer = tf.assign(var0, tf.constant(var0Init))
       val var1Initializer = tf.assign(var1, tf.constant(var1Init))
@@ -55,7 +55,7 @@ object GradientDescentExample {
 
       /* initialize the accumulators */
       val result = session.runner().addTarget(tf.init()).fetch("var0").run();
-      def res(n: Int) = result.get(0).expect(TFloat32.DTYPE).data().getFloat(n)
+      def res(n: Int) = result.get(0).asInstanceOf[TFloat32].getFloat(n)
       println(s"ran session, fetched var0 as ${res(0)} and ${res(1)}")
 
     }

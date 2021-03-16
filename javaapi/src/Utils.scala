@@ -20,19 +20,19 @@ import Optimizer.GradAndVar
 object Utils {
   def opLookup(v: Operand[TFloat32], sess: Session): Float = {
     val result = sess.runner().fetch(v).run()
-    val data = result.get(0).expect(TFloat32.DTYPE).data()
+    val data = result.get(0).asInstanceOf[TFloat32]
     data.getFloat()
   }
 
   def dataLookup(v: Operand[TFloat32], sess: Session): TFloat32 = {
     val result = sess.runner().fetch(v).run()
-    val data = result.get(0).expect(TFloat32.DTYPE).data()
+    val data = result.get(0).asInstanceOf[TFloat32]
     data
   }
 
   def namedLookup(name: String, sess: Session): Float = {
     val result = sess.runner().fetch(name).run()
-    val data = result.get(0).expect(TFloat32.DTYPE).data()
+    val data = result.get(0).asInstanceOf[TFloat32]
     data.getFloat()
   }
 

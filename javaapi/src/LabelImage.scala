@@ -58,8 +58,7 @@ object LabelImage {
         .fetch("output")
         .run()
         .get(0)
-        .expect(TFloat32.DTYPE)
-        .data
+        .asInstanceOf[TFloat32]
 
       val labelProbabilities =
         (0 until labelProbabilityTensor.size().toInt).toArray
@@ -76,7 +75,7 @@ object LabelImage {
 
   def constructAndExecuteGraphToNormalizeImage(
       filename: String
-  ): Tensor[TFloat32] = {
+  ): TFloat32 = {
     val graph = new Graph()
     val tf = Ops.create(graph)
     val imageInput = tf.io.readFile(tf.constant(imageFile))
@@ -104,7 +103,7 @@ object LabelImage {
         tf.constant(scale)
       )
     val session = new Session(graph)
-    session.runner().fetch(image).run().get(0).expect(TFloat32.DTYPE)
+    session.runner().fetch(image).run().get(0).asInstanceOf[TFloat32]
   }
 
 }

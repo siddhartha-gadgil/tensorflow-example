@@ -40,7 +40,7 @@ object MSEGradientDescent {
 
       def varLookup(v: Variable[TFloat32], sess: Session): Vector[Float] = {
         val result = sess.runner().fetch(v).run()
-        val data = result.get(0).expect(TFloat32.DTYPE).data()
+        val data = result.get(0).asInstanceOf[TFloat32]
         (0 until (data.size().toInt)).toVector.map(n => data.getFloat(n))
       }
 

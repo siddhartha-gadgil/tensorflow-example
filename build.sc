@@ -4,11 +4,13 @@ val scalaV = "2.13.3"
 object javaapi extends ScalaModule{
   def scalaVersion = scalaV
   def ivyDeps = Agg(
-    ivy"org.tensorflow:tensorflow-core-platform:0.2.0",
-    ivy"org.tensorflow:tensorflow-framework:0.2.0",
+    ivy"org.tensorflow:tensorflow-core-platform:0.3.0",
+    ivy"org.tensorflow:tensorflow-framework:0.3.0",
     ivy"com.lihaoyi::os-lib:0.7.1",
     ivy"org.creativescala::doodle:0.9.21"
   )
+
+  override def scalacOptions = Seq("-deprecation")
 }
 
 object oldjavaapi extends ScalaModule{

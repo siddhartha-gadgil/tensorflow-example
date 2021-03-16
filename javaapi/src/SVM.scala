@@ -50,8 +50,8 @@ class SVM(graph: Graph, learningRate: Float, svmC: Float) {
   val b = tf.variable(tf.constant(Array(Array(0.1f))))
   val w = tf.variable(tf.constant(Array(Array(0.1f), Array(0.7f)))) // column
 
-  val x = tf.withName("X").placeholder(TFloat32.DTYPE)
-  val y = tf.withName("Y").placeholder(TFloat32.DTYPE)
+  val x = tf.withName("X").placeholder(classOf[TFloat32])
+  val y = tf.withName("Y").placeholder(classOf[TFloat32])
 
   val yRaw = tf.math.add(tf.linalg.matMul(x, w), b)
   val regularizationLoss =
