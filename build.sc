@@ -1,7 +1,9 @@
 import mill._, scalalib._
+import $ivy.`com.goyeau::mill-scalafix:0.2.1`
+import com.goyeau.mill.scalafix.ScalafixModule
 
 val scalaV = "2.13.3"
-object javaapi extends ScalaModule{
+object javaapi extends ScalaModule with ScalafixModule{
   def scalaVersion = scalaV
   def ivyDeps = Agg(
     ivy"org.tensorflow:tensorflow-core-platform:0.3.0",
@@ -10,7 +12,7 @@ object javaapi extends ScalaModule{
     ivy"org.creativescala::doodle:0.9.21"
   )
 
-  override def scalacOptions = Seq("-deprecation")
+  override def scalacOptions = Seq("-deprecation", "-Wunused")
 }
 
 object oldjavaapi extends ScalaModule{

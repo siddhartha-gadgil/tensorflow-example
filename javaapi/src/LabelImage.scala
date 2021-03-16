@@ -1,26 +1,14 @@
 package javaapi
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util
-import java.util.Arrays
 
-import scala.jdk.CollectionConverters._
 import scala.util.Using
 
 import org.tensorflow._
-import org.tensorflow.framework.optimizers.Optimizer
-import org.tensorflow.ndarray._
 import org.tensorflow.op._
-import org.tensorflow.op.core.Placeholder
-import org.tensorflow.op.math.Add
-import org.tensorflow.types._
 
-import ndarray._
-import types._, family.TType
-import core.Variable
-import family.TType
+import types._
 import org.tensorflow.op.image.DecodeJpeg
 import org.tensorflow.proto.framework.GraphDef
 

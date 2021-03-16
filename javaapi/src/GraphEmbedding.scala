@@ -1,47 +1,30 @@
 package javaapi
 
-import org.tensorflow._, ndarray._, types._
-import org.tensorflow.op._, core.Variable
-import org.tensorflow.op.core.Placeholder
-import org.tensorflow.op.math.Add
-import org.tensorflow.types._, family.TType
+import org.tensorflow._
+import org.tensorflow.op._
+import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
 import org.tensorflow.framework.optimizers.{
   Optimizer,
-  GradientDescent,
-  AdaGrad,
-  AdaDelta,
   Adam
 }
-import scala.jdk.CollectionConverters._
-import org.tensorflow.framework.optimizers.AdaGrad
 
-import Optimizer.GradAndVar
-import scala.jdk.CollectionConverters._
 import Utils._
 import scala.util._
 import GraphEmbedding._
-import doodle.core._
 import doodle.image._
-import doodle.image.syntax._
-import doodle.image.syntax.core._
 import doodle.java2d._
 import doodle.reactor._
-import doodle.interact.syntax._
 // Colors and other useful stuff
-import doodle.core._
 import scala.collection.immutable.Nil
-import scala.concurrent._, duration._
-import java.awt.Font
+import scala.concurrent._
 import org.tensorflow.op.core.Max
-import org.tensorflow.op.math.Maximum
 import org.tensorflow.op.core.Assign
 
 object DoodleDraw {
   import doodle.image.syntax._
   import doodle.java2d._
-  import cats.implicits._
   import doodle.syntax._
   import doodle.core._
 

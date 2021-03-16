@@ -2,14 +2,11 @@ package javaapi
 
 import org.tensorflow.ConcreteFunction
 import org.tensorflow.Signature
-import org.tensorflow.Tensor
 import org.tensorflow.TensorFlow
 import org.tensorflow.op.Ops
-import org.tensorflow.op.core.Placeholder
-import org.tensorflow.op.math.Add
 import org.tensorflow.types.TInt32
 import scala.util.Using
-import org.tensorflow.{Session, Graph, Tensor, _}
+import org.tensorflow.{Session, Graph}
 import org.tensorflow.op.linalg.MatMul
 import org.tensorflow.ndarray._
 

@@ -1,16 +1,11 @@
 package javaapi
 
 import org.tensorflow._
-import org.tensorflow.op._, core.Variable
-import org.tensorflow.op.core.Placeholder
-import org.tensorflow.op.math.Add
+import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
-import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.{Optimizer, GradientDescent}
-import scala.jdk.CollectionConverters._
+import org.tensorflow.framework.optimizers.GradientDescent
 import Utils._
-import org.tensorflow.framework.optimizers.AdaGrad
 
 case class GeometricSimple(
     n: Int,

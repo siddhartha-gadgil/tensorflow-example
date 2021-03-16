@@ -1,24 +1,15 @@
 package javaapi
 
-import org.tensorflow._, ndarray._, types._
-import org.tensorflow.op._, core.Variable
-import org.tensorflow.op.core.Placeholder
-import org.tensorflow.op.math.Add
-import org.tensorflow.types._, family.TType
+import org.tensorflow._
+import org.tensorflow.op._
+import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
 import org.tensorflow.framework.optimizers.{
   Optimizer,
-  GradientDescent,
-  AdaGrad,
-  AdaDelta,
   Adam
 }
-import scala.jdk.CollectionConverters._
-import org.tensorflow.framework.optimizers.AdaGrad
 
-import Optimizer.GradAndVar
-import scala.jdk.CollectionConverters._
 import Utils._
 import scala.util.Try
 
