@@ -4,7 +4,7 @@ import org.tensorflow._
 import org.tensorflow.op._, core.Variable
 import org.tensorflow.types._
 import scala.util.Using
-import org.tensorflow.framework.optimizers.{Optimizer, GradientDescent}
+import org.tensorflow.framework.optimizers.GradientDescent
 
 object MSEGradientDescent {
   val var0Init = Array(1.0f, 2.0f)

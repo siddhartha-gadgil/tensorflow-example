@@ -5,10 +5,7 @@ import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.{
-  Optimizer,
-  Adam
-}
+import org.tensorflow.framework.optimizers.Adam
 import org.tensorflow.framework.optimizers.AdaGrad
 
 import Utils._

@@ -5,10 +5,7 @@ import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.{
-  Optimizer,
-  Adam
-}
+import org.tensorflow.framework.optimizers.Adam
 
 import Utils._
 import scala.util._
@@ -18,7 +15,6 @@ import doodle.java2d._
 import doodle.reactor._
 // Colors and other useful stuff
 import scala.collection.immutable.Nil
-import scala.concurrent._
 import org.tensorflow.op.core.Max
 import org.tensorflow.op.core.Assign
 

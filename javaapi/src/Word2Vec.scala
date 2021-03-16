@@ -5,17 +5,8 @@ import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.{
-  Optimizer,
-  AdaDelta,
-  Adam
-}
-import scala.jdk.CollectionConverters._
-import org.tensorflow.framework.optimizers.AdaGrad
+import org.tensorflow.framework.optimizers.Adam
 
-import Optimizer.GradAndVar
-import scala.jdk.CollectionConverters._
-import Utils._
 import scala.util.{Try, Random}
 import org.tensorflow.op.linalg.MatMul
 
