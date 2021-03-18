@@ -457,7 +457,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 800000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
