@@ -18,6 +18,7 @@ import doodle.reactor._
 import scala.collection.immutable.Nil
 import org.tensorflow.op.core.Max
 import org.tensorflow.op.core.Assign
+import doodle.core.Color
 
 object DoodleDraw {
   import doodle.image.syntax._
@@ -33,15 +34,18 @@ object DoodleDraw {
 
   // lazy val canvas3: Canvas = effect.Java2dRenderer.canvas(frame).unsafeRunSync
 
-  def xyImage(xy: List[(Float, Float)]): Image =
+  def xyImage(
+      xy: List[(Float, Float)],
+      colour: Color = Color.hsl(0.degrees, 0.8, 0.6)
+  ): Image =
     xy match {
       case Nil => Image.empty
       case head :: next =>
         Image
           .circle(5)
-          .fillColor(Color.blue)
+          .fillColor(colour)
           .at(Point(head._1, head._2))
-          .on(xyImage(next))
+          .on(xyImage(next, colour.spin(Angle(0.1))))
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
@@ -56,7 +60,8 @@ object DoodleDraw {
 
   def linesImage(
       lines: List[((Float, Float), (Float, Float))],
-      base: Image
+      base: Image,
+      colour: Color = Color.hsl(0.degrees, 0.8, 0.6)
   ): Image =
     lines match {
       case Nil => base
@@ -64,9 +69,9 @@ object DoodleDraw {
         head match {
           case ((x1, y1), (x2, y2)) =>
             Image
-              .line(x2 - x1, y2 - y1)
+              .line(x2 - x1, y2 - y1).strokeColor(colour)
               .at(Point((x1 + x2) / 2, (y1 + y2) / 2))
-              .on(linesImage(next, base))
+              .on(linesImage(next, base, colour.spin(Angle(0.1))))
         }
     }
 
@@ -112,6 +117,39 @@ object GraphEmbedding {
       getSample(remaining.filterNot(_ == pick), size - 1, accum :+ pick)
     }
 
+  def predictRun() = {
+    fitDone0 = false
+    Using(new Graph()) { graph =>
+      println("running prediction based graph embedding")
+      val g = Try(new GraphPredictEmbedding(linMat.size, graph)).fold(
+        fa => {
+          println(fa.getMessage())
+          fa.printStackTrace
+          throw fa
+        },
+        identity(_)
+      )
+      println("created graph")
+      val animReal =
+        Reactor
+          .init(())
+          .onTick(_ => ())
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun)
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw
+                .xyImage(points.toList)
+                .on(Image.rectangle(800, 800).fillColor(Color.black))
+            )
+          }
+          .stop(_ => fitDone0)
+      animReal.run(Frame.size(800, 800))
+      println(g.fit(linMat))
+    }
+  }
+
   def run() = {
     Using(new Graph()) { graph =>
       println("running graph embedding")
@@ -133,33 +171,7 @@ object GraphEmbedding {
       g.fit(linMat)
     }
 
-    Using(new Graph()) { graph =>
-      println("running prediction based graph embedding")
-      val g = Try(new GraphPredictEmbedding(linMat.size, graph)).fold(
-        fa => {
-          println(fa.getMessage())
-          fa.printStackTrace
-          throw fa
-        },
-        identity(_)
-      )
-      println("created graph")
-      val animReal =
-        Reactor
-          .init(())
-          .onTick(_ => ())
-          .render { (_) =>
-            DoodleDraw.showSteps(stepsRun)
-            val (points, lines) = dataSnap
-            DoodleDraw.linesImage(
-              lines.toList,
-              DoodleDraw.xyImage(points.toList)
-            )
-          }
-          .stop(_ => fitDone0)
-      animReal.run(Frame.size(800, 800))
-      println(g.fit(linMat))
-    }
+    (1 to 5).foreach(_ => predictRun())
 
     /*
     Using(new Graph()) { graph =>
@@ -219,6 +231,20 @@ object GraphEmbedding {
     val tLines = tpoints.zip(tpoints.tail :+ tpoints.head)
     (tpoints, tLines)
   }
+
+  import scala.math.{sin, cos}
+  def project(
+      theta: Double,
+      phi: Double
+  )(x: Float, y: Float, z: Float): (Float, Float) =
+    (
+      (x * cos(theta) * sin(phi) + y * sin(theta) * sin(phi) + z * cos(
+        phi
+      )).toFloat,
+      (x * cos(theta) * cos(phi) + y * sin(theta) * cos(phi) - z * sin(
+        phi
+      )).toFloat
+    )
 }
 
 class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
@@ -424,7 +450,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 200000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -437,13 +463,23 @@ class GraphPredictEmbedding(
           .addTarget(minimize)
           .fetch(xs)
           .fetch(ys)
+          .fetch(zs)
           .run()
         val xd = tData.get(0).asInstanceOf[TFloat32]
         val yd = tData.get(1).asInstanceOf[TFloat32]
-        val unscaledPoints: Vector[(Float, Float)] =
+        val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
+        val unscaled3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc.size))
-            .map(n => (xd.getFloat(n), yd.getFloat(n)))
+            .map(n => (xd.getFloat(n), yd.getFloat(n), zd.getFloat(n)))
             .toVector
+        val theta = j.toDouble / 17000
+        val phi = j.toDouble / 15231
+        val unscaledPoints: Vector[(Float, Float)] = unscaled3dPoints.map {
+          case (x, y, z) => project(theta, phi)(x, y, z)
+        }
+        // (0 until (inc.size))
+        //   .map(n => (xd.getFloat(n), yd.getFloat(n)))
+        //   .toVector
         val maxX = unscaledPoints.map(_._1.abs).max
         val maxY = unscaledPoints.map(_._2.abs).max
         val scale = scala.math.min(300f / maxX, 300f / maxY)
