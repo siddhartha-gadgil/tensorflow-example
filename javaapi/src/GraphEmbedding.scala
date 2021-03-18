@@ -6,6 +6,7 @@ import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
 import org.tensorflow.framework.optimizers.Adam
+import org.tensorflow.framework.losses.BinaryCrossentropy
 
 import Utils._
 import scala.util._
@@ -87,6 +88,8 @@ object GraphEmbedding {
 
   var fitDone3 = false
 
+  var fitDone0 = false
+
   var stepsRun = 0
 
   var dataSnap
@@ -129,6 +132,33 @@ object GraphEmbedding {
       animReal.run(Frame.size(800, 800))
       g.fit(linMat)
     }
+
+
+    Using(new Graph()) { graph =>
+      println("running prediction based graph embedding")
+      val g = Try(new GraphPredictEmbedding(linMat.size, graph)).fold(fa => {
+        println(fa.getMessage())
+        fa.printStackTrace
+        throw fa}, identity(_))
+      println("created graph")
+      val animReal =
+        Reactor
+          .init(())
+          .onTick(_ => ())
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun)
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw.xyImage(points.toList)
+            )
+          }
+          .stop(_ => fitDone0)
+      animReal.run(Frame.size(800, 800))
+      println(g.fit(linMat))
+    }
+
+
     Using(new Graph()) { graph =>
       println("running batched graph embedding")
       val g = Try(new GraphEmbeddingBatched(linMat.size, 20, graph)).fold(
@@ -156,6 +186,7 @@ object GraphEmbedding {
       animReal.run(Frame.size(800, 800))
       g.fit(linMat)
     }
+
     Using(new Graph()) { graph =>
       println("fitting in sequence")
       val g = new GraphEmbeddingSeq(linMat.size, graph)
@@ -293,6 +324,117 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         (0 until (inc.size)).map(n =>
           (txd.getFloat(n) * 60f, tyd.getFloat(n) * 60f)
         )
+    }
+  }
+
+}
+
+class GraphPredictEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
+  val tf = Ops.create(graph)
+
+  val ones = tf.constant(Array.fill(numPoints)(1.0f))
+
+  val xs = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val ys = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val repXs = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val repYs = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  def rankOne(v: Operand[TFloat32], w: Operand[TFloat32]) =
+    tf.linalg.matMul(
+      tf.reshape(v, tf.constant(Array(numPoints, 1))),
+      tf.reshape(w, tf.constant(Array(1, numPoints)))
+    )
+
+  val xProds = tf.math.mul(rankOne(xs, ones), rankOne(ones, repXs))
+
+  val yProds = tf.math.mul(rankOne(ys, ones), rankOne(ones, repYs))
+
+  val dotProds = tf.math.add(xProds, yProds)
+
+  val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
+
+  val oneEpsMatrix =
+    tf.constant(Array.fill(numPoints, numPoints)(1.0f + epsilon))
+
+  val probs = tf.math.sigmoid(dotProds)
+
+  val incidence = tf.placeholder(classOf[TFloat32])
+
+  val bce = new BinaryCrossentropy(tf)
+
+  val loss =// bce.call(incidence, probs)
+  tf.math.neg(
+    tf.reduceSum(
+      (
+        tf.math.add(
+          tf.math.mul(incidence, tf.math.log(probs)),
+          tf.math.mul(
+            tf.math.sub(oneMatrix, incidence),
+            tf.math.log(tf.math.sub(oneMatrix, probs))
+          )
+        )
+      ),
+      tf.constant(Array(0, 1))
+    )
+  )
+
+  // max(x, 0) - x * z + log(1 + exp(-abs(x)))
+  val stableLoss = tf.math.add(
+    tf.math
+      .sub(tf.math.maximum(dotProds, tf.constant(0f)), tf.math.mul(dotProds, incidence)),
+    tf.math.log(
+      tf.math.add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dotProds))))
+    )
+  )
+
+  val optimizer = new Adam(graph)
+
+  val minimize = optimizer.minimize(stableLoss)
+
+  def fit(inc: Array[Array[Float]], steps: Int = 200000) = {
+    Using(new Session(graph)) { session =>
+      session.run(tf.init())
+      println("initialized")
+      val incT = TFloat32.tensorOf(StdArrays.ndCopyOf(inc))
+      println("Tuning")
+      (1 to steps).foreach { j =>
+        val tData = session
+          .runner()
+          .feed(incidence, incT)
+          .addTarget(minimize)
+          .fetch(xs)
+          .fetch(ys)
+          .run()
+        val xd = tData.get(0).asInstanceOf[TFloat32]
+        val yd = tData.get(1).asInstanceOf[TFloat32]
+        val unscaledPoints: Vector[(Float, Float)] =
+          (0 until (inc.size))
+            .map(n => (xd.getFloat(n), yd.getFloat(n)))
+            .toVector
+        val maxX = unscaledPoints.map(_._1.abs).max
+        val maxY = unscaledPoints.map(_._2.abs).max
+        val scale = scala.math.min(300f / maxX, 300f / maxY)
+        // if (j % 100 == 0) println(scale)
+        val points = unscaledPoints.map { case (x, y) =>
+          (x * scale, y * scale)
+        }
+        val lines = points.zip(points.tail :+ points.head)
+        stepsRun = j
+        dataSnap = (points, lines)
+      }
+      fitDone0 = true
+      println("Tuning complete")
     }
   }
 

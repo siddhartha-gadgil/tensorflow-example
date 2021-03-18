@@ -18,10 +18,10 @@ object Word2Vec {
     .flatMap { l =>
       l.split("[\\s.!?\\-:,;]+").map(_.toLowerCase())
     }
-    .toVector
+    .toVector.map(_.replaceAll("""[\p{Punct}&&[^.]]""", ""))
   // .take(100)
 
-  val vocabVector = ("<pad>" +: tokens).distinct
+  val vocabVector: Vector[String] = ("<pad>" +: tokens).distinct
 
   val vocab: Map[String, Int] = vocabVector.zipWithIndex.toMap
 
