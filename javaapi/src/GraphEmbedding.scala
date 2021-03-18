@@ -38,7 +38,7 @@ object DoodleDraw {
       case Nil => Image.empty
       case head :: next =>
         Image
-          .circle(10)
+          .circle(5)
           .fillColor(Color.blue)
           .at(Point(head._1, head._2))
           .on(xyImage(next))
@@ -133,13 +133,16 @@ object GraphEmbedding {
       g.fit(linMat)
     }
 
-
     Using(new Graph()) { graph =>
       println("running prediction based graph embedding")
-      val g = Try(new GraphPredictEmbedding(linMat.size, graph)).fold(fa => {
-        println(fa.getMessage())
-        fa.printStackTrace
-        throw fa}, identity(_))
+      val g = Try(new GraphPredictEmbedding(linMat.size, graph)).fold(
+        fa => {
+          println(fa.getMessage())
+          fa.printStackTrace
+          throw fa
+        },
+        identity(_)
+      )
       println("created graph")
       val animReal =
         Reactor
@@ -158,7 +161,7 @@ object GraphEmbedding {
       println(g.fit(linMat))
     }
 
-
+    /*
     Using(new Graph()) { graph =>
       println("running batched graph embedding")
       val g = Try(new GraphEmbeddingBatched(linMat.size, 20, graph)).fold(
@@ -205,6 +208,7 @@ object GraphEmbedding {
       animReal.run(Frame.size(800, 800))
       g.fitSeq(linMat)
     }
+     */
   }
 
   def pointsAndLines(txs: TFloat32, tys: TFloat32, n: Int) = {
@@ -316,7 +320,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
         .run()
         .get(0)
         .asInstanceOf[TFloat32]
-        
+
       println(tundedData.getFloat())
       val txd = dataLookup(xs, session)
       val tyd = dataLookup(ys, session)
@@ -329,7 +333,11 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
 
 }
 
-class GraphPredictEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
+class GraphPredictEmbedding(
+    numPoints: Int,
+    graph: Graph,
+    epsilon: Float = 0.01f
+) {
   val tf = Ops.create(graph)
 
   val ones = tf.constant(Array.fill(numPoints)(1.0f))
@@ -342,11 +350,19 @@ class GraphPredictEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f
     tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
   )
 
+  val zs = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
   val repXs = tf.variable(
     tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
   )
 
   val repYs = tf.variable(
+    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val repZs = tf.variable(
     tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
   )
 
@@ -360,7 +376,9 @@ class GraphPredictEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f
 
   val yProds = tf.math.mul(rankOne(ys, ones), rankOne(ones, repYs))
 
-  val dotProds = tf.math.add(xProds, yProds)
+  val zProds = tf.math.mul(rankOne(zs, ones), rankOne(ones, repZs))
+
+  val dotProds = tf.math.add(zProds, tf.math.add(xProds, yProds))
 
   val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
 
@@ -373,28 +391,32 @@ class GraphPredictEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f
 
   val bce = new BinaryCrossentropy(tf)
 
-  val loss =// bce.call(incidence, probs)
-  tf.math.neg(
-    tf.reduceSum(
-      (
-        tf.math.add(
-          tf.math.mul(incidence, tf.math.log(probs)),
-          tf.math.mul(
-            tf.math.sub(oneMatrix, incidence),
-            tf.math.log(tf.math.sub(oneMatrix, probs))
+  val loss = // bce.call(incidence, probs)
+    tf.math.neg(
+      tf.reduceSum(
+        (
+          tf.math.add(
+            tf.math.mul(incidence, tf.math.log(probs)),
+            tf.math.mul(
+              tf.math.sub(oneMatrix, incidence),
+              tf.math.log(tf.math.sub(oneMatrix, probs))
+            )
           )
-        )
-      ),
-      tf.constant(Array(0, 1))
+        ),
+        tf.constant(Array(0, 1))
+      )
     )
-  )
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
   val stableLoss = tf.math.add(
     tf.math
-      .sub(tf.math.maximum(dotProds, tf.constant(0f)), tf.math.mul(dotProds, incidence)),
+      .sub(
+        tf.math.maximum(dotProds, tf.constant(0f)),
+        tf.math.mul(dotProds, incidence)
+      ),
     tf.math.log(
-      tf.math.add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dotProds))))
+      tf.math
+        .add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dotProds))))
     )
   )
 
@@ -464,11 +486,14 @@ class GraphEmbeddingBatched(
 
   val maxY: Max[TFloat32] = tf.max(tf.math.abs(fys), tf.constant(Array(0)))
 
-  val maxCoordScale = tf.math.div(tf.math.maximum(maxX, maxY), tf.constant(2000f))
+  val maxCoordScale =
+    tf.math.div(tf.math.maximum(maxX, maxY), tf.constant(2000f))
 
-  val rescaleX: Assign[TFloat32] = tf.assign(fxs, tf.math.div(fxs, maxCoordScale))
+  val rescaleX: Assign[TFloat32] =
+    tf.assign(fxs, tf.math.div(fxs, maxCoordScale))
 
-  val rescaleY: Assign[TFloat32] = tf.assign(fys, tf.math.div(fys, maxCoordScale))  
+  val rescaleY: Assign[TFloat32] =
+    tf.assign(fys, tf.math.div(fys, maxCoordScale))
 
   val projection = tf.placeholderWithDefault(
     tf.constant(Array.fill(batchSize)(Array.fill(numPoints)(1f))),
@@ -539,7 +564,11 @@ class GraphEmbeddingBatched(
 
   val minimize = optimizer.minimize(loss)
 
-  def fit(inc: Array[Array[Float]], rescale: Boolean = false, steps: Int = 2000000) = {
+  def fit(
+      inc: Array[Array[Float]],
+      rescale: Boolean = false,
+      steps: Int = 2000000
+  ) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -563,16 +592,17 @@ class GraphEmbeddingBatched(
             projMat
           )
         )
-        (if (rescale && j % 5000 == 0) Try{
-          session.runner().addTarget(rescaleX).addTarget(rescaleY).run()
-        }.fold(
-          fa => {
-            println(fa.getMessage())
-            println(fa.printStackTrace())
-            throw fa
-          },
-          identity(_)
-        ))
+        (if (rescale && j % 5000 == 0)
+           Try {
+             session.runner().addTarget(rescaleX).addTarget(rescaleY).run()
+           }.fold(
+             fa => {
+               println(fa.getMessage())
+               println(fa.printStackTrace())
+               throw fa
+             },
+             identity(_)
+           ))
         // println(incB.map(_.toVector).toVector)
         val tData = Try(
           session

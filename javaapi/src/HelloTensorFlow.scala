@@ -12,13 +12,13 @@ import org.tensorflow.ndarray._
 
 object HelloTensorFlow {
   def main(args: Array[String]) : Unit = {
-    run()
-    GradientDescentExample.run()
-    MSEGradientDescent.run()
-    GeometricSimple.run()
-    SimpleLinearModel.run()
-    LabelImage.run()
-    SVM.run()
+    // run()
+    // GradientDescentExample.run()
+    // MSEGradientDescent.run()
+    // GeometricSimple.run()
+    // SimpleLinearModel.run()
+    // LabelImage.run()
+    // SVM.run()
     GraphEmbedding.run()
   }
 
