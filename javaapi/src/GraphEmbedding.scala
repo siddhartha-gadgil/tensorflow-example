@@ -103,7 +103,7 @@ object GraphEmbedding {
     (Vector(), Vector())
 
   val linMat = Array.tabulate(N, N) { case (i: Int, j: Int) =>
-    if (scala.math.abs(i - j) < 5 || Set(i, j) == Set(0, N - 1)) 1.0f else 0.0f
+    if (scala.math.abs(i - j) < 5 || (i + N - j < 5) || (j + N - i) < 5) 1.0f else 0.0f
   }
 
   @scala.annotation.tailrec
@@ -313,7 +313,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
 
   val minimize = optimizer.minimize(loss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 100000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
