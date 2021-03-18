@@ -457,7 +457,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 1000000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -481,8 +481,8 @@ class GraphPredictEmbedding(
           (0 until (inc.size))
             .map(n => (zoom(xd.getFloat(n)), zoom(yd.getFloat(n)), zoom(zd.getFloat(n))))
             .toVector
-        val theta = j.toDouble / 9000
-        val phi = j.toDouble / 11231
+        val theta = j.toDouble / 3000
+        val phi = j.toDouble / 4231
         val maxX = unscaled3dPoints.map(_._1.abs).max
         val maxY = unscaled3dPoints.map(_._2.abs).max
         val maxZ = unscaled3dPoints.map(_._3.abs).max
