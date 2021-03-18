@@ -131,22 +131,6 @@ object GraphEmbedding {
         identity(_)
       )
       println("created graph")
-      val animReal =
-        Reactor
-          .init(())
-          .onTick(_ => ())
-          .render { (_) =>
-            DoodleDraw.showSteps(stepsRun)
-            val (points, lines) = dataSnap
-            DoodleDraw.linesImage(
-              lines.toList,
-              DoodleDraw
-                .xyImage(points.toList)
-                .on(Image.rectangle(1000, 1000).fillColor(Color.black))
-            )
-          }
-          .stop(_ => fitDone0)
-      animReal.run(Frame.size(1000, 1000))
       println(g.fit(linMat))
     }
   }
@@ -171,6 +155,23 @@ object GraphEmbedding {
       animReal.run(Frame.size(800, 800))
       g.fit(linMat)
     }
+
+    val animReal =
+        Reactor
+          .init(())
+          .onTick(_ => ())
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun)
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw
+                .xyImage(points.toList)
+                .on(Image.rectangle(1000, 1000).fillColor(Color.black))
+            )
+          }
+          .stop(_ => fitDone0)
+      animReal.run(Frame.size(1000, 1000))
 
     (1 to 3).foreach(_ => predictRun())
 
@@ -308,7 +309,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     )
   )
 
-  val optimizer = new Adam(graph)
+  val optimizer = new Nadam(graph)
 
   val minimize = optimizer.minimize(loss)
 
