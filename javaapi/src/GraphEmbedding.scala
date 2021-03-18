@@ -5,7 +5,7 @@ import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.Adam
+import org.tensorflow.framework.optimizers._
 import org.tensorflow.framework.losses.BinaryCrossentropy
 
 import Utils._
@@ -103,7 +103,7 @@ object GraphEmbedding {
     (Vector(), Vector())
 
   val linMat = Array.tabulate(N, N) { case (i: Int, j: Int) =>
-    if (scala.math.abs(i - j) < 2 || Set(i, j) == Set(0, N - 1)) 1.0f else 0.0f
+    if (scala.math.abs(i - j) < 5 || Set(i, j) == Set(0, N - 1)) 1.0f else 0.0f
   }
 
   @scala.annotation.tailrec
@@ -172,7 +172,7 @@ object GraphEmbedding {
       g.fit(linMat)
     }
 
-    (1 to 5).foreach(_ => predictRun())
+    (1 to 3).foreach(_ => predictRun())
 
     /*
     Using(new Graph()) { graph =>
@@ -452,11 +452,11 @@ class GraphPredictEmbedding(
     )
   )
 
-  val optimizer = new Adam(graph)
+  val optimizer = new Nadam(graph)
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 800000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -475,7 +475,7 @@ class GraphPredictEmbedding(
         val yd = tData.get(1).asInstanceOf[TFloat32]
         val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
         import scala.math.sqrt
-        def zoom(a: Float) = if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
+        def zoom(a: Float) = a// if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
         val unscaled3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc.size))
             .map(n => (zoom(xd.getFloat(n)), zoom(yd.getFloat(n)), zoom(zd.getFloat(n))))
