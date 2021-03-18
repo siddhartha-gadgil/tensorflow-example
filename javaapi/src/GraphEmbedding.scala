@@ -45,7 +45,7 @@ object DoodleDraw {
           .circle(5)
           .fillColor(colour)
           .at(Point(head._1, head._2))
-          .on(xyImage(next, colour.spin(Angle(0.1))))
+          .on(xyImage(next, colour.spin(Angle(0.2))))
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
@@ -71,7 +71,7 @@ object DoodleDraw {
             Image
               .line(x2 - x1, y2 - y1).strokeColor(colour)
               .at(Point((x1 + x2) / 2, (y1 + y2) / 2))
-              .on(linesImage(next, base, colour.spin(Angle(0.1))))
+              .on(linesImage(next, base, colour.spin(Angle(0.2))))
         }
     }
 
@@ -141,11 +141,11 @@ object GraphEmbedding {
               lines.toList,
               DoodleDraw
                 .xyImage(points.toList)
-                .on(Image.rectangle(800, 800).fillColor(Color.black))
+                .on(Image.rectangle(1000, 1000).fillColor(Color.black))
             )
           }
           .stop(_ => fitDone0)
-      animReal.run(Frame.size(800, 800))
+      animReal.run(Frame.size(1000, 1000))
       println(g.fit(linMat))
     }
   }
@@ -450,7 +450,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 200000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -472,8 +472,8 @@ class GraphPredictEmbedding(
           (0 until (inc.size))
             .map(n => (xd.getFloat(n), yd.getFloat(n), zd.getFloat(n)))
             .toVector
-        val theta = j.toDouble / 17000
-        val phi = j.toDouble / 15231
+        val theta = j.toDouble / 9000
+        val phi = j.toDouble / 11231
         val unscaledPoints: Vector[(Float, Float)] = unscaled3dPoints.map {
           case (x, y, z) => project(theta, phi)(x, y, z)
         }
@@ -482,7 +482,7 @@ class GraphPredictEmbedding(
         //   .toVector
         val maxX = unscaledPoints.map(_._1.abs).max
         val maxY = unscaledPoints.map(_._2.abs).max
-        val scale = scala.math.min(300f / maxX, 300f / maxY)
+        val scale = scala.math.min(400f / maxX, 400f / maxY)
         // if (j % 100 == 0) println(scale)
         val points = unscaledPoints.map { case (x, y) =>
           (x * scale, y * scale)
