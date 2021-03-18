@@ -5,7 +5,7 @@ import org.tensorflow.op._
 import org.tensorflow.types._
 import scala.util.Using
 import org.tensorflow.ndarray._
-import org.tensorflow.framework.optimizers.Adam
+import org.tensorflow.framework.optimizers._
 import org.tensorflow.framework.losses.BinaryCrossentropy
 
 import Utils._
@@ -131,22 +131,6 @@ object GraphEmbedding {
         identity(_)
       )
       println("created graph")
-      val animReal =
-        Reactor
-          .init(())
-          .onTick(_ => ())
-          .render { (_) =>
-            DoodleDraw.showSteps(stepsRun)
-            val (points, lines) = dataSnap
-            DoodleDraw.linesImage(
-              lines.toList,
-              DoodleDraw
-                .xyImage(points.toList)
-                .on(Image.rectangle(1000, 1000).fillColor(Color.black))
-            )
-          }
-          .stop(_ => fitDone0)
-      animReal.run(Frame.size(1000, 1000))
       println(g.fit(linMat))
     }
   }
@@ -172,7 +156,24 @@ object GraphEmbedding {
       g.fit(linMat)
     }
 
-    (1 to 5).foreach(_ => predictRun())
+    val animReal =
+        Reactor
+          .init(())
+          .onTick(_ => ())
+          .render { (_) =>
+            DoodleDraw.showSteps(stepsRun)
+            val (points, lines) = dataSnap
+            DoodleDraw.linesImage(
+              lines.toList,
+              DoodleDraw
+                .xyImage(points.toList)
+                .on(Image.rectangle(1000, 1000).fillColor(Color.black))
+            )
+          }
+          .stop(_ => fitDone0)
+      animReal.run(Frame.size(1000, 1000))
+
+    (1 to 3).foreach(_ => predictRun())
 
     /*
     Using(new Graph()) { graph =>
@@ -308,7 +309,7 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     )
   )
 
-  val optimizer = new Adam(graph)
+  val optimizer = new Nadam(graph)
 
   val minimize = optimizer.minimize(loss)
 
@@ -456,7 +457,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 800000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
