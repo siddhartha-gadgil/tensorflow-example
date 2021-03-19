@@ -86,7 +86,7 @@ object FunctionApproximator {
     import doodle.image.syntax._
     import doodle.image.syntax.core._
     import doodle.java2d._
-    val sinImage = fitSin()
+    val sinImage = fitSin(steps = 100000)
     sinImage.draw()
     val sinImage2 = fitSin(xscale = 30, steps = 200000)
     sinImage2.draw()
