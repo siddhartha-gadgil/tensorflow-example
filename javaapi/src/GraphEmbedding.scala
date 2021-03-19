@@ -309,11 +309,11 @@ class GraphEmbedding(numPoints: Int, graph: Graph, epsilon: Float = 0.01f) {
     )
   )
 
-  val optimizer = new Nadam(graph)
+  val optimizer = new Adam(graph)
 
   val minimize = optimizer.minimize(loss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 400000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 40000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -453,11 +453,11 @@ class GraphPredictEmbedding(
     )
   )
 
-  val optimizer = new Nadam(graph)
+  val optimizer = new Adam(graph)
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 1000000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 200000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -477,10 +477,16 @@ class GraphPredictEmbedding(
         val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
         import scala.math.sqrt
         def zoom(a: Float) = a// if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
-        val unscaled3dPoints: Vector[(Float, Float, Float)] =
+        val base3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc.size))
             .map(n => (zoom(xd.getFloat(n)), zoom(yd.getFloat(n)), zoom(zd.getFloat(n))))
             .toVector
+        val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
+        val yavg = base3dPoints.map(_._2).sum / base3dPoints.size
+        val zavg = base3dPoints.map(_._3).sum / base3dPoints.size
+        val unscaled3dPoints = base3dPoints.map{
+          case (x, y, z) => (x - xavg, y - yavg, z - zavg)
+        }
         val theta = j.toDouble / 3000
         val phi = j.toDouble / 4231
         val maxX = unscaled3dPoints.map(_._1.abs).max
