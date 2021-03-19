@@ -29,12 +29,16 @@ object FunctionApproximator {
     }
   }.flatten
 
-  def fit3(fn: Float => Float = identity(_), steps: Int = 100000) = {
+  def fit3(
+      fn: Float => Float = identity(_),
+      steps: Int = 100000,
+      dim: Int = 100
+  ) = {
     Using(new Graph()) { graph =>
       def fnGraph = { val x = rnd.nextFloat(); (x, fn(x)) }
-      val funcAp = new FunctionApproximator3Hidden(graph, 100)
+      val funcAp = new FunctionApproximator3Hidden(graph, dim)
       println("Created graph")
-      val sample = Vector.tabulate(10)(j => j * 0.1f)
+      val sample = Vector.tabulate(1000)(j => j * 0.001f)
       val fitted = funcAp.fit(fnGraph, steps, sample)
       println("fitted")
       fitted.map(fit =>
@@ -44,6 +48,49 @@ object FunctionApproximator {
       )
     }
   }.flatten
+
+  def fitSin(xscale: Double = 10, steps: Int = 50000, dim: Int = 100) = {
+    import scala.math.sin, DoodleDraw._
+    val fitted = fit3(x => sin(x * xscale).toFloat, steps, dim)
+      .fold(
+        fa => {
+          println(s"Failed to fit: ${fa.getMessage}")
+          fa.printStackTrace
+          throw fa
+        },
+        identity(_)
+      )
+      .toList
+
+    import doodle.core._
+    val trueImage = xyImage(
+      fitted.map(_._1).zipWithIndex.map { case (y, j) =>
+        (j.toFloat * 1000 / fitted.size, y * 400)
+      },
+      Color.black,
+      Angle(0)
+    )
+    val image = xyImage(
+      fitted.map(_._2).zipWithIndex.map { case (y, j) =>
+        (j.toFloat * 1000 / fitted.size, y * 400)
+      },
+      Color.red,
+      Angle(0)
+    ).on(trueImage)
+    image
+  }
+
+  def run(): Unit = {
+    import doodle.core._
+    import doodle.image._
+    import doodle.image.syntax._
+    import doodle.image.syntax.core._
+    import doodle.java2d._
+    val sinImage = fitSin()
+    sinImage.draw()
+    val sinImage2 = fitSin(xscale = 30, steps = 200000)
+    sinImage2.draw()
+  }
 }
 
 class FunctionApproximator(graph: Graph, dim: Int) {
@@ -71,11 +118,15 @@ class FunctionApproximator(graph: Graph, dim: Int) {
   )
 
   val A2 = tf.variable(
-    tf.constant(Array.fill(dim, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat ))
+    tf.constant(
+      Array.fill(dim, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat)
+    )
   )
 
   val A3 = tf.variable(
-    tf.constant(Array.fill(1, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat))
+    tf.constant(
+      Array.fill(1, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat)
+    )
   )
 
   val h1 = tf.math.tanh(
@@ -151,15 +202,21 @@ class FunctionApproximator3Hidden(graph: Graph, dim: Int) {
   )
 
   val A2 = tf.variable(
-    tf.constant(Array.fill(dim, dim)(rnd.nextFloat()/ scala.math.sqrt(dim).toFloat))
+    tf.constant(
+      Array.fill(dim, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat)
+    )
   )
 
   val A3 = tf.variable(
-    tf.constant(Array.fill(dim, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat))
+    tf.constant(
+      Array.fill(dim, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat)
+    )
   )
 
   val A4 = tf.variable(
-    tf.constant(Array.fill(1, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat))
+    tf.constant(
+      Array.fill(1, dim)(rnd.nextFloat() / scala.math.sqrt(dim).toFloat)
+    )
   )
 
   val h1 = tf.math.tanh(

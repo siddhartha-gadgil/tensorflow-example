@@ -12,7 +12,9 @@ object javaapi extends ScalaModule with ScalafixModule{
     ivy"org.creativescala::doodle:0.9.21"
   )
 
-  override def scalacOptions = Seq("-deprecation", "-Wunused")
+  override def scalacOptions = Seq("-deprecation"
+  // , "-Wunused"
+  )
 }
 
 object oldjavaapi extends ScalaModule{

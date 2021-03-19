@@ -23,7 +23,7 @@ import doodle.core.Color
 object DoodleDraw {
   import doodle.image.syntax._
   import doodle.java2d._
-  import doodle.syntax._
+  import doodle.syntax._, doodle.image._
   import doodle.core._
 
   val frame = Frame.size(300, 100)
@@ -36,7 +36,8 @@ object DoodleDraw {
 
   def xyImage(
       xy: List[(Float, Float)],
-      colour: Color = Color.hsl(0.degrees, 0.8, 0.6)
+      colour: Color = Color.hsl(0.degrees, 0.8, 0.6),
+      colourSpin: Angle = Angle(0.2)
   ): Image =
     xy match {
       case Nil => Image.empty
@@ -45,7 +46,7 @@ object DoodleDraw {
           .circle(5)
           .fillColor(colour)
           .at(Point(head._1, head._2))
-          .on(xyImage(next, colour.spin(Angle(0.2))))
+          .on(xyImage(next, colour.spin(colourSpin), colourSpin))
     }
 
   def xyPlot(xy: List[(Float, Float)]) = xyImage(xy).draw()
@@ -61,7 +62,8 @@ object DoodleDraw {
   def linesImage(
       lines: List[((Float, Float), (Float, Float))],
       base: Image,
-      colour: Color = Color.hsl(0.degrees, 0.8, 0.6)
+      colour: Color = Color.hsl(0.degrees, 0.8, 0.6),
+      colourSpin: Angle = Angle(0.2)
   ): Image =
     lines match {
       case Nil => base
@@ -72,7 +74,7 @@ object DoodleDraw {
               .line(x2 - x1, y2 - y1)
               .strokeColor(colour)
               .at(Point((x1 + x2) / 2, (y1 + y2) / 2))
-              .on(linesImage(next, base, colour.spin(Angle(0.2))))
+              .on(linesImage(next, base, colour.spin(colourSpin)))
         }
     }
 
