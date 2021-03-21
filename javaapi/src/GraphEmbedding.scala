@@ -21,6 +21,7 @@ import doodle.java2d._
 // Colors and other useful stuff
 import scala.collection.immutable.Nil
 import doodle.core.Color
+import org.tensorflow.op.linalg.MatMul
 object GraphEmbedding {
   val rnd = new Random()
   val N = 75
@@ -369,28 +370,12 @@ class GraphPredictEmbedding(
 
   val ones = tf.constant(Array.fill(numPoints)(1.0f))
 
-  val xs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val vertexEmbed = tf.variable(
+    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  val ys = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val zs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repXs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repYs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repZs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val contextEmbed = tf.variable(
+    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
   def rankOne(v: Operand[TFloat32], w: Operand[TFloat32]) =
@@ -399,18 +384,13 @@ class GraphPredictEmbedding(
       tf.reshape(w, tf.constant(Array(1, numPoints)))
     )
 
-  val xProds = tf.math.mul(rankOne(xs, ones), rankOne(ones, repXs))
-
-  val yProds = tf.math.mul(rankOne(ys, ones), rankOne(ones, repYs))
-
-  val zProds = tf.math.mul(rankOne(zs, ones), rankOne(ones, repZs))
-
-  val dotProds = tf.math.add(zProds, tf.math.add(xProds, yProds))
+  val dotProds = tf.linalg.matMul(
+    vertexEmbed,
+    contextEmbed,
+    MatMul.transposeA(true).transposeB(false)
+  )
 
   val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
-
-  val oneEpsMatrix =
-    tf.constant(Array.fill(numPoints, numPoints)(1.0f + epsilon))
 
   val probs = tf.math.sigmoid(dotProds)
 
@@ -462,20 +442,16 @@ class GraphPredictEmbedding(
           .runner()
           .feed(incidence, incT)
           .addTarget(minimize)
-          .fetch(xs)
-          .fetch(ys)
-          .fetch(zs)
+          .fetch(vertexEmbed)
           .run()
-        val xd = tData.get(0).asInstanceOf[TFloat32]
-        val yd = tData.get(1).asInstanceOf[TFloat32]
-        val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
+        val vertexd = tData.get(0).asInstanceOf[TFloat32]
         import scala.math.sqrt
         def zoom(a: Float) =
           a // if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
         val base3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc.size))
             .map(n =>
-              (zoom(xd.getFloat(n)), zoom(yd.getFloat(n)), zoom(zd.getFloat(n)))
+              (zoom(vertexd.getFloat(0, n)), zoom(vertexd.getFloat(1, n)), zoom(vertexd.getFloat(2, n)))
             )
             .toVector
         val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
@@ -509,17 +485,13 @@ class GraphPredictEmbedding(
         .runner()
         .feed(incidence, incT)
         .addTarget(minimize)
-        .fetch(xs)
-        .fetch(ys)
-        .fetch(zs)
+        .fetch(vertexEmbed)
         .run()
-      val xd = tData.get(0).asInstanceOf[TFloat32]
-      val yd = tData.get(1).asInstanceOf[TFloat32]
-      val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
+      val vd = tData.get(0).asInstanceOf[TFloat32]
       import scala.math.sqrt
 
       (0 until (inc.size))
-        .map(n => (xd.getFloat(n), yd.getFloat(n), zd.getFloat(n)))
+        .map(n => (vd.getFloat(0, n), vd.getFloat(0, n), vd.getFloat(0, n)))
         .toVector
 
     }
@@ -536,40 +508,28 @@ class GraphDualPredictEmbedding(
 
   val ones = tf.constant(Array.fill(numPoints)(1.0f))
 
-  val xs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val vertexEmbed = tf.variable(
+    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  val ys = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val contextEmbed1 = tf.variable(
+    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  val zs = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val dotProds1 = tf.linalg.matMul(
+    vertexEmbed,
+    contextEmbed1,
+    MatMul.transposeA(true).transposeB(false)
   )
 
-  val repXs1 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val contextEmbed2 = tf.variable(
+    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  val repYs1 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repZs1 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repXs2 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repYs2 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
-  )
-
-  val repZs2 = tf.variable(
-    tf.constant(Array.fill(numPoints)(rnd.nextFloat() * 2.0f))
+  val dotProds2 = tf.linalg.matMul(
+    vertexEmbed,
+    contextEmbed2,
+    MatMul.transposeA(true).transposeB(false)
   )
 
   def rankOne(v: Operand[TFloat32], w: Operand[TFloat32]) =
@@ -577,22 +537,6 @@ class GraphDualPredictEmbedding(
       tf.reshape(v, tf.constant(Array(numPoints, 1))),
       tf.reshape(w, tf.constant(Array(1, numPoints)))
     )
-
-  val xProds1 = tf.math.mul(rankOne(xs, ones), rankOne(ones, repXs1))
-
-  val yProds1 = tf.math.mul(rankOne(ys, ones), rankOne(ones, repYs1))
-
-  val zProds1 = tf.math.mul(rankOne(zs, ones), rankOne(ones, repZs1))
-
-  val dotProds1 = tf.math.add(zProds1, tf.math.add(xProds1, yProds1))
-
-  val xProds2 = tf.math.mul(rankOne(xs, ones), rankOne(ones, repXs2))
-
-  val yProds2 = tf.math.mul(rankOne(ys, ones), rankOne(ones, repYs2))
-
-  val zProds2 = tf.math.mul(rankOne(zs, ones), rankOne(ones, repZs2))
-
-  val dotProds2 = tf.math.add(zProds2, tf.math.add(xProds2, yProds2))
 
   val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
 
@@ -606,22 +550,6 @@ class GraphDualPredictEmbedding(
   val probs2 = tf.math.sigmoid(dotProds2)
 
   val incidence2 = tf.placeholder(classOf[TFloat32])
-
-  // val loss = // bce.call(incidence, probs)
-  //   tf.math.neg(
-  //     tf.reduceSum(
-  //       (
-  //         tf.math.add(
-  //           tf.math.mul(incidence, tf.math.log(probs)),
-  //           tf.math.mul(
-  //             tf.math.sub(oneMatrix, incidence),
-  //             tf.math.log(tf.math.sub(oneMatrix, probs))
-  //           )
-  //         )
-  //       ),
-  //       tf.constant(Array(0, 1))
-  //     )
-  //   )
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
   val stableLoss1 = tf.math.add(
@@ -671,20 +599,16 @@ class GraphDualPredictEmbedding(
           .feed(incidence1, inc1T)
           .feed(incidence2, inc2T)
           .addTarget(minimize)
-          .fetch(xs)
-          .fetch(ys)
-          .fetch(zs)
+          .fetch(vertexEmbed)
           .run()
-        val xd = tData.get(0).asInstanceOf[TFloat32]
-        val yd = tData.get(1).asInstanceOf[TFloat32]
-        val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
+        val vd = tData.get(0).asInstanceOf[TFloat32]
         import scala.math.sqrt
         def zoom(a: Float) =
           a // if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
         val base3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc1.size))
             .map(n =>
-              (zoom(xd.getFloat(n)), zoom(yd.getFloat(n)), zoom(zd.getFloat(n)))
+              (zoom(vd.getFloat(0, n)), zoom(vd.getFloat(1, n)), zoom(vd.getFloat(2, n)))
             )
             .toVector
         val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
@@ -718,17 +642,13 @@ class GraphDualPredictEmbedding(
         .runner()
         .feed(incidence1, inc1T)
         .feed(incidence2, inc2T)
-        .fetch(xs)
-        .fetch(ys)
-        .fetch(zs)
+        .fetch(vertexEmbed)
         .run()
-      val xd = tData.get(0).asInstanceOf[TFloat32]
-      val yd = tData.get(1).asInstanceOf[TFloat32]
-      val zd: TFloat32 = tData.get(2).asInstanceOf[TFloat32]
+      val vd = tData.get(0).asInstanceOf[TFloat32]
       import scala.math.sqrt
 
       (0 until (inc1.size))
-        .map(n => (xd.getFloat(n), yd.getFloat(n), zd.getFloat(n)))
+        .map(n => (vd.getFloat(0, n), vd.getFloat(1, n), vd.getFloat(2, n)))
         .toVector
     }
   }
