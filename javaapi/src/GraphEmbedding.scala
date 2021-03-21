@@ -84,7 +84,7 @@ object GraphEmbedding {
     fitDone0 = false
     Using(new Graph()) { graph =>
       println("running multiple predictions based graph embedding")
-      val g = Try(new GraphDualPredictEmbedding(linMat.size, graph)).fold(
+      val g = Try(new GraphDualPredictEmbedding(linMat.size, graph, 3)).fold(
         fa => {
           println(fa.getMessage())
           fa.printStackTrace
@@ -93,7 +93,7 @@ object GraphEmbedding {
         identity(_)
       )
       println("created graph")
-      g.fit(linMat, linMat2)
+      g.fit(linMat, linMat2, 150000)
     }.flatten
   }
 
@@ -136,7 +136,7 @@ object GraphEmbedding {
     animReal.run(Frame.size(1000, 1000))
 
     val reps: IndexedSeq[Vector[(Float, Float, Float)]] =
-      (1 to 2).map(_ => predictDualRun().get)
+      (1 to 3).map(_ => predictDualRun().get)
     // (1 to 3).foreach(_ => predictRun())
     reps.foreach { repV =>
       val rep = repV.map { case (x, y, z) => Array(x, y, z) }
@@ -432,7 +432,7 @@ class GraphPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  def fit(inc: Array[Array[Float]], steps: Int = 200000) = {
+  def fit(inc: Array[Array[Float]], steps: Int = 150000) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
       println("initialized")
@@ -503,18 +503,18 @@ class GraphPredictEmbedding(
 class GraphDualPredictEmbedding(
     numPoints: Int,
     graph: Graph,
-    epsilon: Float = 0.01f
+    dim: Int = 3
 ) {
   val tf = Ops.create(graph)
 
   val ones = tf.constant(Array.fill(numPoints)(1.0f))
 
   val vertexEmbed = tf.variable(
-    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
   val contextEmbed1 = tf.variable(
-    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
   val dotProds1 = tf.linalg.matMul(
@@ -524,7 +524,7 @@ class GraphDualPredictEmbedding(
   )
 
   val contextEmbed2 = tf.variable(
-    tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
   val dotProds2 = tf.linalg.matMul(
@@ -540,9 +540,6 @@ class GraphDualPredictEmbedding(
     )
 
   val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
-
-  val oneEpsMatrix =
-    tf.constant(Array.fill(numPoints, numPoints)(1.0f + epsilon))
 
   val probs1 = tf.math.sigmoid(dotProds1)
 
@@ -586,7 +583,7 @@ class GraphDualPredictEmbedding(
   val vertexAverage = tf.math.div(tf.reduceSum(vertexEmbed, tf.constant(1)), tf.constant(numPoints.toFloat))
 
   val averageMatrix = tf.linalg.matMul(
-      tf.reshape(vertexAverage, tf.constant(Array(3, 1))),
+      tf.reshape(vertexAverage, tf.constant(Array(dim, 1))),
       tf.reshape(ones, tf.constant(Array(1, numPoints)))
     )
 
@@ -606,7 +603,7 @@ class GraphDualPredictEmbedding(
   def fit(
       inc1: Array[Array[Float]],
       inc2: Array[Array[Float]],
-      steps: Int = 200000
+      steps: Int = 150000
   ) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
@@ -627,40 +624,18 @@ class GraphDualPredictEmbedding(
         import scala.math.sqrt
         def zoom(a: Float) =
           a // if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
-        val base3dPoints: Vector[(Float, Float, Float)] =
+        val basePoints =
           (0 until (inc1.size))
             .map(n =>
-              (zoom(vd.getFloat(0, n)), zoom(vd.getFloat(1, n)), zoom(vd.getFloat(2, n)))
+              (zoom(vd.getFloat(0, n)), zoom(vd.getFloat(1, n)))
             )
             .toVector
-        // val eigenTensor = tData.get(1).asInstanceOf[TFloat32]
-        // val norms = (0 to 2).map(
-        //   col => 
-        //     sqrt((0 to 2).map(row => eigenTensor.getFloat(row, col)).map(x => x * x).sum)
-        // )
-        // println(norms)
-        // val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
-        // val yavg = base3dPoints.map(_._2).sum / base3dPoints.size
-        // val zavg = base3dPoints.map(_._3).sum / base3dPoints.size
-        val unscaled3dPoints = base3dPoints
-        // base3dPoints.map { case (x, y, z) =>
-        //   (x - xavg, y - yavg, z - zavg)
-        // }
-        val theta = j.toDouble / 3000
-        val phi = j.toDouble / 4231
-        val maxX = unscaled3dPoints.map(_._1.abs).max
-        val maxY = unscaled3dPoints.map(_._2.abs).max
-        val maxZ = unscaled3dPoints.map(_._3.abs).max
-        val scale = List(300f / maxX, 300f / maxY, 300f / maxZ).min
-        val scaled3dPoints = unscaled3dPoints.map { case (x, y, z) =>
-          (x * scale, y * scale, z * scale)
+        val maxX = basePoints.map(_._1.abs).max
+        val maxY = basePoints.map(_._2.abs).max
+        val scale = List(300f / maxX, 300f / maxY).min
+        val points: Vector[(Float, Float)] = basePoints.map {
+          case (x, y) => (x * scale, y * scale) // project(theta, phi, 3000)(x, y, z)
         }
-        val points: Vector[(Float, Float)] = scaled3dPoints.map {
-          case (x, y, z) => (x, y) // project(theta, phi, 3000)(x, y, z)
-        }
-        // val points = unscaledPoints.map { case (x, y) =>
-        //   (x * scale, y * scale)
-        // }
         val lines = points.zip(points.tail :+ points.head)
         stepsRun = j
         dataSnap = (points, lines)
@@ -789,7 +764,7 @@ class GraphEmbeddingBatched(
   def fit(
       inc: Array[Array[Float]],
       rescale: Boolean = false,
-      steps: Int = 2000000
+      steps: Int = 1500000
   ) = {
     Using(new Session(graph)) { session =>
       session.run(tf.init())
