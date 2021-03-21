@@ -22,6 +22,7 @@ import doodle.java2d._
 import scala.collection.immutable.Nil
 import doodle.core.Color
 import org.tensorflow.op.linalg.MatMul
+import org.tensorflow.op.linalg.SelfAdjointEig
 object GraphEmbedding {
   val rnd = new Random()
   val N = 75
@@ -582,6 +583,26 @@ class GraphDualPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
+  val vertexAverage = tf.math.div(tf.reduceSum(vertexEmbed, tf.constant(1)), tf.constant(numPoints.toFloat))
+
+  val averageMatrix = tf.linalg.matMul(
+      tf.reshape(vertexAverage, tf.constant(Array(3, 1))),
+      tf.reshape(ones, tf.constant(Array(1, numPoints)))
+    )
+
+  val vertexCentred = tf.math.sub(vertexEmbed, averageMatrix)
+
+  val covMatrix = tf.linalg.matMul(
+    vertexEmbed,
+    vertexEmbed,
+    MatMul.transposeA(false).transposeB(true)
+  )
+
+  val eig = tf.linalg.selfAdjointEig(covMatrix, SelfAdjointEig.computeV(true))
+
+  val vertexRotated = tf.linalg.matMul(eig.v(), vertexCentred, MatMul.transposeA(true).transposeB(false))
+
+
   def fit(
       inc1: Array[Array[Float]],
       inc2: Array[Array[Float]],
@@ -599,7 +620,8 @@ class GraphDualPredictEmbedding(
           .feed(incidence1, inc1T)
           .feed(incidence2, inc2T)
           .addTarget(minimize)
-          .fetch(vertexEmbed)
+          .fetch(vertexRotated)
+          // .fetch(eig.v())
           .run()
         val vd = tData.get(0).asInstanceOf[TFloat32]
         import scala.math.sqrt
@@ -611,12 +633,19 @@ class GraphDualPredictEmbedding(
               (zoom(vd.getFloat(0, n)), zoom(vd.getFloat(1, n)), zoom(vd.getFloat(2, n)))
             )
             .toVector
-        val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
-        val yavg = base3dPoints.map(_._2).sum / base3dPoints.size
-        val zavg = base3dPoints.map(_._3).sum / base3dPoints.size
-        val unscaled3dPoints = base3dPoints.map { case (x, y, z) =>
-          (x - xavg, y - yavg, z - zavg)
-        }
+        // val eigenTensor = tData.get(1).asInstanceOf[TFloat32]
+        // val norms = (0 to 2).map(
+        //   col => 
+        //     sqrt((0 to 2).map(row => eigenTensor.getFloat(row, col)).map(x => x * x).sum)
+        // )
+        // println(norms)
+        // val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
+        // val yavg = base3dPoints.map(_._2).sum / base3dPoints.size
+        // val zavg = base3dPoints.map(_._3).sum / base3dPoints.size
+        val unscaled3dPoints = base3dPoints
+        // base3dPoints.map { case (x, y, z) =>
+        //   (x - xavg, y - yavg, z - zavg)
+        // }
         val theta = j.toDouble / 3000
         val phi = j.toDouble / 4231
         val maxX = unscaled3dPoints.map(_._1.abs).max
@@ -627,7 +656,7 @@ class GraphDualPredictEmbedding(
           (x * scale, y * scale, z * scale)
         }
         val points: Vector[(Float, Float)] = scaled3dPoints.map {
-          case (x, y, z) => project(theta, phi, 3000)(x, y, z)
+          case (x, y, z) => (x, y) // project(theta, phi, 3000)(x, y, z)
         }
         // val points = unscaledPoints.map { case (x, y) =>
         //   (x * scale, y * scale)
