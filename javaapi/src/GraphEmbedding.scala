@@ -379,12 +379,6 @@ class GraphPredictEmbedding(
     tf.constant(Array.fill(3, numPoints)(rnd.nextFloat() * 2.0f))
   )
 
-  def rankOne(v: Operand[TFloat32], w: Operand[TFloat32]) =
-    tf.linalg.matMul(
-      tf.reshape(v, tf.constant(Array(numPoints, 1))),
-      tf.reshape(w, tf.constant(Array(1, numPoints)))
-    )
-
   val dotProds = tf.linalg.matMul(
     vertexEmbed,
     contextEmbed,
@@ -393,27 +387,9 @@ class GraphPredictEmbedding(
 
   val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
 
-  val probs = tf.math.sigmoid(dotProds)
-
   val incidence = tf.placeholder(classOf[TFloat32])
 
   val bce = new BinaryCrossentropy(tf)
-
-  val loss = // bce.call(incidence, probs)
-    tf.math.neg(
-      tf.reduceSum(
-        (
-          tf.math.add(
-            tf.math.mul(incidence, tf.math.log(probs)),
-            tf.math.mul(
-              tf.math.sub(oneMatrix, incidence),
-              tf.math.log(tf.math.sub(oneMatrix, probs))
-            )
-          )
-        ),
-        tf.constant(Array(0, 1))
-      )
-    )
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
   val stableLoss = tf.math.add(
@@ -446,13 +422,14 @@ class GraphPredictEmbedding(
           .fetch(vertexEmbed)
           .run()
         val vertexd = tData.get(0).asInstanceOf[TFloat32]
-        import scala.math.sqrt
-        def zoom(a: Float) =
-          a // if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
         val base3dPoints: Vector[(Float, Float, Float)] =
           (0 until (inc.size))
             .map(n =>
-              (zoom(vertexd.getFloat(0, n)), zoom(vertexd.getFloat(1, n)), zoom(vertexd.getFloat(2, n)))
+              (
+                vertexd.getFloat(0, n),
+                vertexd.getFloat(1, n),
+                vertexd.getFloat(2, n)
+              )
             )
             .toVector
         val xavg = base3dPoints.map(_._1).sum / base3dPoints.size
@@ -533,21 +510,15 @@ class GraphDualPredictEmbedding(
     MatMul.transposeA(true).transposeB(false)
   )
 
-  def rankOne(v: Operand[TFloat32], w: Operand[TFloat32]) =
-    tf.linalg.matMul(
-      tf.reshape(v, tf.constant(Array(numPoints, 1))),
-      tf.reshape(w, tf.constant(Array(1, numPoints)))
-    )
+  val incidence1 = tf.placeholderWithDefault(
+    tf.constant(Array.fill(numPoints, numPoints)(1f)),
+    Shape.of(numPoints, numPoints)
+  )
 
-  val oneMatrix = tf.constant(Array.fill(numPoints, numPoints)(1.0f))
-
-  val probs1 = tf.math.sigmoid(dotProds1)
-
-  val incidence1 = tf.placeholder(classOf[TFloat32])
-
-  val probs2 = tf.math.sigmoid(dotProds2)
-
-  val incidence2 = tf.placeholder(classOf[TFloat32])
+  val incidence2 = tf.placeholderWithDefault(
+    tf.constant(Array.fill(numPoints, numPoints)(1f)),
+    Shape.of(numPoints, numPoints)
+  )
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
   val stableLoss1 = tf.math.add(
@@ -580,12 +551,15 @@ class GraphDualPredictEmbedding(
 
   val minimize = optimizer.minimize(stableLoss)
 
-  val vertexAverage = tf.math.div(tf.reduceSum(vertexEmbed, tf.constant(1)), tf.constant(numPoints.toFloat))
+  val vertexAverage = tf.math.div(
+    tf.reduceSum(vertexEmbed, tf.constant(1)),
+    tf.constant(numPoints.toFloat)
+  )
 
   val averageMatrix = tf.linalg.matMul(
-      tf.reshape(vertexAverage, tf.constant(Array(dim, 1))),
-      tf.reshape(ones, tf.constant(Array(1, numPoints)))
-    )
+    tf.reshape(vertexAverage, tf.constant(Array(dim, 1))),
+    tf.reshape(ones, tf.constant(Array(1, numPoints)))
+  )
 
   val vertexCentred = tf.math.sub(vertexEmbed, averageMatrix)
 
@@ -595,10 +569,14 @@ class GraphDualPredictEmbedding(
     MatMul.transposeA(false).transposeB(true)
   )
 
-  val eig = tf.linalg.selfAdjointEig(covMatrix, SelfAdjointEig.computeV(true))
+  val eig: SelfAdjointEig[TFloat32] =
+    tf.linalg.selfAdjointEig(covMatrix, SelfAdjointEig.computeV(true))
 
-  val vertexRotated = tf.linalg.matMul(eig.v(), vertexCentred, MatMul.transposeA(true).transposeB(false))
-
+  val vertexRotated = tf.linalg.matMul(
+    eig.v(),
+    vertexCentred,
+    MatMul.transposeA(true).transposeB(false)
+  )
 
   def fit(
       inc1: Array[Array[Float]],
@@ -621,20 +599,15 @@ class GraphDualPredictEmbedding(
           // .fetch(eig.v())
           .run()
         val vd = tData.get(0).asInstanceOf[TFloat32]
-        import scala.math.sqrt
-        def zoom(a: Float) =
-          a // if (a >= 0) sqrt(a).toFloat else -sqrt(-a).toFloat
         val basePoints =
           (0 until (inc1.size))
-            .map(n =>
-              (zoom(vd.getFloat(0, n)), zoom(vd.getFloat(1, n)))
-            )
+            .map(n => (vd.getFloat(0, n), vd.getFloat(1, n)))
             .toVector
         val maxX = basePoints.map(_._1.abs).max
         val maxY = basePoints.map(_._2.abs).max
         val scale = List(300f / maxX, 300f / maxY).min
-        val points: Vector[(Float, Float)] = basePoints.map {
-          case (x, y) => (x * scale, y * scale) // project(theta, phi, 3000)(x, y, z)
+        val points: Vector[(Float, Float)] = basePoints.map { case (x, y) =>
+          (x * scale, y * scale) // project(theta, phi, 3000)(x, y, z)
         }
         val lines = points.zip(points.tail :+ points.head)
         stepsRun = j
@@ -644,8 +617,6 @@ class GraphDualPredictEmbedding(
       println("Tuning complete")
       val tData = session
         .runner()
-        .feed(incidence1, inc1T)
-        .feed(incidence2, inc2T)
         .fetch(vertexEmbed)
         .run()
       val vd = tData.get(0).asInstanceOf[TFloat32]
