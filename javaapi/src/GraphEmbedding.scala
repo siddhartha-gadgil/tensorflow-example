@@ -102,7 +102,7 @@ object GraphEmbedding {
     Using(new Graph()) { graph =>
       println("running batched multiple predictions based graph embedding")
       val g = Try(
-        new GraphDualPredictBatchedEmbedding(linMat.size, 30, graph, 3)
+        new GraphDualPredictBatchedEmbedding(linMat.size, graph, 3)
       ).fold(
         fa => {
           println(fa.getMessage())
@@ -664,13 +664,10 @@ class GraphDualPredictEmbedding(
 
 class GraphDualPredictBatchedEmbedding(
     numPoints: Int,
-    batchSize: Int,
     graph: Graph,
     dim: Int = 3
 ) {
   val tf = Ops.create(graph)
-
-  val ones = tf.constant(Array.fill(numPoints)(1.0f))
 
   val vertexEmbed = tf.variable(
     tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
@@ -752,6 +749,9 @@ class GraphDualPredictBatchedEmbedding(
   val optimizer = new Adam(graph)
 
   val minimize = optimizer.minimize(stableLoss)
+
+  // Projecting to 2 dimensions using principal components
+  val ones = tf.constant(Array.fill(numPoints)(1.0f))
 
   val vertexAverage = tf.math.div(
     tf.reduceSum(vertexEmbed, tf.constant(1)),
