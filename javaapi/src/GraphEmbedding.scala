@@ -131,7 +131,7 @@ object GraphEmbedding {
         identity(_)
       )
       println("created graph")
-      g.fit(25000, linMat, linMat2, 50000, 200)
+      g.fit(10000, linMat, linMat2, 50000, 100)
     }.flatten
   }
 
