@@ -100,7 +100,7 @@ object GraphEmbedding {
   def predictDualBatchRun() = {
     fitDone0 = false
     Using(new Graph()) { graph =>
-      println("running multiple predictions based graph embedding")
+      println("running batched multiple predictions based graph embedding")
       val g = Try(
         new GraphDualPredictBatchedEmbedding(linMat.size, 30, graph, 3)
       ).fold(
@@ -112,7 +112,7 @@ object GraphEmbedding {
         identity(_)
       )
       println("created graph")
-      g.fit(linMat, linMat2, 500000)
+      g.fit(30, linMat, linMat2, 500000)
     }.flatten
   }
 
@@ -154,8 +154,8 @@ object GraphEmbedding {
         .stop(_ => fitDone0)
     animReal.run(Frame.size(1000, 1000))
 
-    (1 to 3).foreach(_ =>
-      println(
+    val repsHard = (1 to 3).map(_ =>
+      (
         predictDualBatchRun().fold(
           fa => {
             println(fa.getMessage())
@@ -166,11 +166,11 @@ object GraphEmbedding {
         )
       )
     )
-    
+
     val reps: IndexedSeq[Vector[(Float, Float, Float)]] =
       (1 to 3).map(_ => predictDualRun().get)
     // (1 to 3).foreach(_ => predictRun())
-    reps.foreach { repV =>
+    (repsHard ++ reps).foreach { repV =>
       val rep = repV.map { case (x, y, z) => Array(x, y, z) }
       val masked = (0 until (N)).filter(_ => rnd.nextDouble() < 0.1).toVector
       @scala.annotation.tailrec
@@ -677,13 +677,13 @@ class GraphDualPredictBatchedEmbedding(
   )
 
   val vertexIncl = tf.placeholderWithDefault(
-    tf.constant(Array.fill(numPoints, batchSize)(1f)),
-    Shape.of(numPoints, batchSize)
+    tf.constant(Array.fill(numPoints, 1)(1f)),
+    Shape.of(numPoints, -1)
   )
 
   val contextIncl = tf.placeholderWithDefault(
-    tf.constant(Array.fill(numPoints, batchSize)(1f)),
-    Shape.of(numPoints, batchSize)
+    tf.constant(Array.fill(numPoints, 1)(1f)),
+    Shape.of(numPoints, -1)
   )
 
   val vertexInclEmbed = tf.linalg.matMul(vertexEmbed, vertexIncl)
@@ -713,13 +713,13 @@ class GraphDualPredictBatchedEmbedding(
   )
 
   val incidence1 = tf.placeholderWithDefault(
-    tf.constant(Array.fill(batchSize, batchSize)(1f)),
-    Shape.of(batchSize, batchSize)
+    tf.constant(Array.fill(1, 1)(1f)),
+    Shape.of(-1, -1)
   )
 
   val incidence2 = tf.placeholderWithDefault(
-    tf.constant(Array.fill(batchSize, batchSize)(1f)),
-    Shape.of(batchSize, batchSize)
+    tf.constant(Array.fill(1, 1)(1f)),
+    Shape.of(-1, -1)
   )
 
   // max(x, 0) - x * z + log(1 + exp(-abs(x)))
@@ -781,6 +781,7 @@ class GraphDualPredictBatchedEmbedding(
   )
 
   def fit(
+      batchSize: Int,
       inc1: Array[Array[Float]],
       inc2: Array[Array[Float]],
       steps: Int = 150000
@@ -814,7 +815,9 @@ class GraphDualPredictBatchedEmbedding(
         )
         val contextInclMat =
           Array.tabulate(numPoints) { i =>
-            Array.tabulate(batchSize)(j => if (i == contextSample(j)) 1f else 0f)
+            Array.tabulate(batchSize)(j =>
+              if (i == contextSample(j)) 1f else 0f
+            )
           }
         val contextInclT = TFloat32.tensorOf(
           StdArrays.ndCopyOf(
