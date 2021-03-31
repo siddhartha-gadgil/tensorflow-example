@@ -116,6 +116,25 @@ object GraphEmbedding {
     }.flatten
   }
 
+  def predictLinearBatchRun() = {
+    fitDone0 = false
+    Using(new Graph()) { graph =>
+      println("running linear batched multiple predictions based graph embedding")
+      val g = Try(
+        new GraphDualPredictLinearBatchedEmbedding(linMat.size, graph, 3)
+      ).fold(
+        fa => {
+          println(fa.getMessage())
+          fa.printStackTrace
+          throw fa
+        },
+        identity(_)
+      )
+      println("created graph")
+      g.fit(25000, linMat, linMat2, 50000, 200)
+    }.flatten
+  }
+
   def run() = {
     Using(new Graph()) { graph =>
       println("running graph embedding")
@@ -153,6 +172,19 @@ object GraphEmbedding {
         }
         .stop(_ => fitDone0)
     animReal.run(Frame.size(1000, 1000))
+
+    val repsLinear = (1 to 3).map(_ =>
+      (
+        predictLinearBatchRun().fold(
+          fa => {
+            println(fa.getMessage())
+            fa.printStackTrace
+            throw fa
+          },
+          identity(_)
+        )
+      )
+    )
 
     val repsHard = (1 to 3).map(_ =>
       (
@@ -836,6 +868,220 @@ class GraphDualPredictBatchedEmbedding(
           .addTarget(minimize)
           .fetch(vertexRotated)
           // .fetch(eig.v())
+          .run()
+        val vd = tData.get(0).asInstanceOf[TFloat32]
+        val basePoints =
+          (0 until (inc1.size))
+            .map(n => (vd.getFloat(0, n), vd.getFloat(1, n)))
+            .toVector
+        val maxX = basePoints.map(_._1.abs).max
+        val maxY = basePoints.map(_._2.abs).max
+        val scale = List(300f / maxX, 300f / maxY).min
+        val points: Vector[(Float, Float)] = basePoints.map { case (x, y) =>
+          (x * scale, y * scale) // project(theta, phi, 3000)(x, y, z)
+        }
+        val lines = points.zip(points.tail :+ points.head)
+        stepsRun = j
+        dataSnap = (points, lines)
+      }
+      fitDone0 = true
+      println("Tuning complete")
+      val tData = session
+        .runner()
+        .fetch(vertexEmbed)
+        .run()
+      val vd = tData.get(0).asInstanceOf[TFloat32]
+      import scala.math.sqrt
+
+      (0 until (inc1.size))
+        .map(n => (vd.getFloat(0, n), vd.getFloat(1, n), vd.getFloat(2, n)))
+        .toVector
+    }
+  }
+
+}
+
+class GraphDualPredictLinearBatchedEmbedding(
+    numPoints: Int,
+    graph: Graph,
+    dim: Int = 3
+) {
+  val tf = Ops.create(graph)
+
+  val vertexEmbed = tf.variable(
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val vertexIncl = tf.placeholderWithDefault(
+    tf.constant(Array.fill(numPoints, 1)(1f)),
+    Shape.of(numPoints, -1)
+  )
+
+  val contextIncl = tf.placeholderWithDefault(
+    tf.constant(Array.fill(numPoints, 1)(1f)),
+    Shape.of(numPoints, -1)
+  )
+
+  val vertexInclEmbed = tf.linalg.matMul(vertexEmbed, vertexIncl)
+
+  val contextEmbed1 = tf.variable(
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val contextInclEmbed1 = tf.linalg.matMul(contextEmbed1, contextIncl)
+
+  val dotProds1 = tf.reduceSum(tf.math.mul(
+    vertexInclEmbed,
+    contextInclEmbed1
+  ), tf.constant(Array(0)))
+
+  val contextEmbed2 = tf.variable(
+    tf.constant(Array.fill(dim, numPoints)(rnd.nextFloat() * 2.0f))
+  )
+
+  val contextInclEmbed2 = tf.linalg.matMul(contextEmbed2, contextIncl)
+
+  val dotProds2 =tf.reduceSum(tf.math.mul(
+    vertexInclEmbed,
+    contextInclEmbed2
+  ), tf.constant(Array(0)))
+
+  val incidence1 = tf.placeholderWithDefault(
+    tf.constant(Array.fill(1)(1f)),
+    Shape.of(-1)
+  )
+
+  val incidence2 = tf.placeholderWithDefault(
+    tf.constant(Array.fill(1)(1f)),
+    Shape.of(-1)
+  )
+
+  // max(x, 0) - x * z + log(1 + exp(-abs(x)))
+  val stableLoss1 = tf.math.add(
+    tf.math
+      .sub(
+        tf.math.maximum(dotProds1, tf.constant(0f)),
+        tf.math.mul(dotProds1, incidence1)
+      ),
+    tf.math.log(
+      tf.math
+        .add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dotProds1))))
+    )
+  )
+
+  val stableLoss2 = tf.math.add(
+    tf.math
+      .sub(
+        tf.math.maximum(dotProds2, tf.constant(0f)),
+        tf.math.mul(dotProds2, incidence2)
+      ),
+    tf.math.log(
+      tf.math
+        .add(tf.constant(1f), tf.math.exp(tf.math.neg(tf.math.abs(dotProds2))))
+    )
+  )
+
+  val stableLoss = tf.math.add(stableLoss1, stableLoss2)
+
+  val optimizer = new Adam(graph)
+
+  val minimize = optimizer.minimize(stableLoss)
+
+  // Projecting to 2 dimensions using principal components
+  val ones = tf.constant(Array.fill(numPoints)(1.0f))
+
+  val vertexAverage = tf.math.div(
+    tf.reduceSum(vertexEmbed, tf.constant(1)),
+    tf.constant(numPoints.toFloat)
+  )
+
+  val averageMatrix = tf.linalg.matMul(
+    tf.reshape(vertexAverage, tf.constant(Array(dim, 1))),
+    tf.reshape(ones, tf.constant(Array(1, numPoints)))
+  )
+
+  val vertexCentred = tf.math.sub(vertexEmbed, averageMatrix)
+
+  val covMatrix = tf.linalg.matMul(
+    vertexEmbed,
+    vertexEmbed,
+    MatMul.transposeA(false).transposeB(true)
+  )
+
+  val eig: SelfAdjointEig[TFloat32] =
+    tf.linalg.selfAdjointEig(covMatrix, SelfAdjointEig.computeV(true))
+
+  val vertexRotated = tf.linalg.matMul(
+    eig.v(),
+    vertexCentred,
+    MatMul.transposeA(true).transposeB(false)
+  )
+
+  def fit(
+      batchSize: Int,
+      inc1: Array[Array[Float]],
+      inc2: Array[Array[Float]],
+      steps: Int = 15000,
+      stepsPerBatch: Int = 1000,
+  ) = {
+    Using(new Session(graph)) { session =>
+      session.run(tf.init())
+      println("initialized")
+
+      println("Tuning")
+      (1 to steps).foreach { j =>
+        val vertexSample =
+          (0 until(batchSize)).toArray.map(_ => rnd.nextInt(numPoints))
+        val contextSample =
+          (0 until(batchSize)).toArray.map(_ => rnd.nextInt(numPoints))
+        val inc1Sample = vertexSample.zip(contextSample).map { case (i, j) =>
+          inc1(vertexSample(i))(contextSample(j))
+        }
+        val inc2Sample = vertexSample.zip(contextSample).map { case (i, j) =>
+          inc2(vertexSample(i))(contextSample(j))
+        }
+        val inc1T = TFloat32.tensorOf(StdArrays.ndCopyOf(inc1Sample))
+        val inc2T = TFloat32.tensorOf(StdArrays.ndCopyOf(inc2Sample))
+        val vertexInclMat =
+          Array.tabulate(numPoints) { i =>
+            Array.tabulate(batchSize)(j => if (i == vertexSample(j)) 1f else 0f)
+          }
+        val vertexInclT = TFloat32.tensorOf(
+          StdArrays.ndCopyOf(
+            vertexInclMat
+          )
+        )
+        val contextInclMat =
+          Array.tabulate(numPoints) { i =>
+            Array.tabulate(batchSize)(j =>
+              if (i == contextSample(j)) 1f else 0f
+            )
+          }
+        val contextInclT = TFloat32.tensorOf(
+          StdArrays.ndCopyOf(
+            contextInclMat
+          )
+        )
+
+        (0 until(stepsPerBatch)).foreach(_ =>
+          session
+          .runner()
+          .feed(incidence1, inc1T)
+          .feed(incidence2, inc2T)
+          .feed(vertexIncl, vertexInclT)
+          .feed(contextIncl, contextInclT)
+          .addTarget(minimize)
+          .run()
+          )
+
+        val tData = session
+          .runner()
+          .feed(incidence1, inc1T)
+          .feed(incidence2, inc2T)
+          .feed(vertexIncl, vertexInclT)
+          .feed(contextIncl, contextInclT)
+          .addTarget(minimize)
+          .fetch(vertexRotated)
           .run()
         val vd = tData.get(0).asInstanceOf[TFloat32]
         val basePoints =
